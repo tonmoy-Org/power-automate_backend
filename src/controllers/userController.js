@@ -59,61 +59,6 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-
-const getTechRoleUsers = async (req, res) => {
-    try {
-        const { search, status, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
-        const filter = { role: 'tech' }; // Only this line is different from getAllUsers
-
-        if (req.query.excludeCurrent === 'true') {
-            filter._id = { $ne: req.user._id };
-        }
-
-        if (status && status !== 'all') {
-            if (status === 'active') filter.isActive = true;
-            if (status === 'inactive') filter.isActive = false;
-        }
-
-        if (search) {
-            filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-                { role: { $regex: search, $options: 'i' } }
-            ];
-        }
-
-        const sort = {};
-        sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
-
-        const skip = (parseInt(page) - 1) * parseInt(limit);
-        const limitNum = parseInt(limit);
-
-        const total = await User.countDocuments(filter);
-        const users = await User.find(filter)
-            .select('-password -resetPasswordToken -resetPasswordExpire')
-            .sort(sort)
-            .skip(skip)
-            .limit(limitNum);
-
-        res.status(200).json({
-            success: true,
-            count: users.length,
-            total,
-            totalPages: Math.ceil(total / limitNum),
-            currentPage: parseInt(page),
-            data: users,
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while fetching tech users',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        });
-    }
-};
-
 const getUserById = async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
@@ -291,63 +236,11 @@ const toggleUserStatus = async (req, res) => {
     }
 };
 
-const bulkUpdateStatus = async (req, res) => {
-    try {
-        const { userIds, isActive } = req.body;
-        if (!Array.isArray(userIds) || userIds.length === 0) {
-            return res.status(400).json({ success: false, message: 'Please provide user IDs' });
-        }
-
-        const users = await User.find({ _id: { $in: userIds } });
-        if (users.some(u => u.role === 'superadmin')) {
-            return res.status(403).json({ success: false, message: 'Cannot modify superadmin users' });
-        }
-
-        const selfUser = users.find(u => u._id.toString() === req.user._id.toString());
-        if (selfUser && isActive === false) {
-            return res.status(403).json({ success: false, message: 'Cannot deactivate your own account' });
-        }
-
-        await User.updateMany({ _id: { $in: userIds } }, { isActive });
-        res.status(200).json({ success: true, message: `${userIds.length} user(s) ${isActive ? 'activated' : 'deactivated'} successfully` });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while bulk updating user status',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        });
-    }
-};
-
-const checkEmailExists = async (req, res) => {
-    try {
-        const user = await User.findOne({ email: req.params.email });
-        res.status(200).json({
-            success: true,
-            exists: !!user,
-            data: user ? { id: user._id, name: user.name, email: user.email, role: user.role } : null
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({
-            success: false,
-            message: 'Server error while checking email',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        });
-    }
-};
-
 module.exports = {
     getAllUsers,
     getUserById,
     createUser,
     updateUser,
     deleteUser,
-    toggleUserStatus,
-    bulkUpdateStatus,
-    bulkUpdateStatus,
-    checkEmailExists,
-    getTechRoleUsers
+    toggleUserStatus
 };
