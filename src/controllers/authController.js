@@ -45,7 +45,7 @@ const register = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'tech',
+      role: role || 'client',
     });
 
     const token = generateToken(user._id, user.role);

@@ -157,7 +157,7 @@ const createUser = async (req, res) => {
             name,
             email,
             password,
-            role: role || 'manager',
+            role: role || 'member',
             isActive: isActive !== undefined ? isActive : true,
         });
 
@@ -239,7 +239,7 @@ const deleteUser = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Cannot delete superadmin user' });
         }
 
-        if (user._id.toString() === req.user._id.toString()) {
+        if (user._id === req.user._id) {
             return res.status(403).json({ success: false, message: 'Cannot delete your own account' });
         }
 

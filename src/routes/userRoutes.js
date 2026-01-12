@@ -9,7 +9,7 @@ const validateUser = [
     body('name').trim().notEmpty().isLength({ min: 2, max: 50 }),
     body('email').trim().notEmpty().isEmail().normalizeEmail(),
     body('password').optional().isLength({ min: 6 }),
-    body('role').optional().isIn(['superadmin', 'manager', 'tech']),
+    body('role').optional().isIn(['superadmin', 'member', 'client']),
 ];
 
 router.use(authMiddleware.protect);
