@@ -172,10 +172,6 @@ const deleteUser = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (user.role === 'superadmin') {
-            return res.status(403).json({ success: false, message: 'Cannot delete superadmin user' });
-        }
-
         if (user._id === req.user._id) {
             return res.status(403).json({ success: false, message: 'Cannot delete your own account' });
         }
