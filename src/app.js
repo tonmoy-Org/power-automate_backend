@@ -10,7 +10,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: 'https://power-automate-fontend.vercel.app/login' ,
+    origin: 'https://power-automate-fontend.vercel.app' ,
     credentials: true,
   })
 );
