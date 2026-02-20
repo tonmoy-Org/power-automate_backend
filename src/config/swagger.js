@@ -1,5 +1,4 @@
 const swaggerJsdoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
 
 const options = {
   definition: {
@@ -15,7 +14,7 @@ const options = {
         description: 'Development server',
       },
       {
-        url: 'https://power-automate-fontend-vtln.vercel.app',
+        url: 'https://your-production-url.com',
         description: 'Production server',
       },
     ],
@@ -526,15 +525,47 @@ const options = {
 const swaggerSpec = swaggerJsdoc(options);
 
 const setupSwagger = (app) => {
-  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-    customSiteTitle: 'Power Automate API Docs',
-    customCss: '.swagger-ui .topbar { display: none }',
-  }));
-
   // Expose raw JSON spec
   app.get('/api/docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
+  });
+
+  // Serve Swagger UI via CDN — fixes "SwaggerUIBundle is not defined" on hosted platforms
+  app.get('/api/docs', (req, res) => {
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Power Automate API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css" />
+  <style>
+    body { margin: 0; }
+    .swagger-ui .topbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-standalone-preset.js"></script>
+  <script>
+    window.onload = function () {
+      SwaggerUIBundle({
+        url: '/api/docs.json',
+        dom_id: '#swagger-ui',
+        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+        layout: 'StandaloneLayout',
+        deepLinking: true,
+        persistAuthorization: true,
+      });
+    };
+  </script>
+</body>
+</html>
+    `);
   });
 
   console.log('📄 Swagger docs available at /api/docs');
