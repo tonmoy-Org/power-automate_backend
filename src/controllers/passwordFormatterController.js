@@ -87,36 +87,14 @@ const createPasswordFormatter = async (req, res) => {
     try {
         const { start_add, start_index, end_index, end_add } = req.body;
 
-        // if (!start_add || start_index === undefined || !end_index || !end_add) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Please provide start_add, start_index, end_index, and end_add'
-        //     });
-        // }
+        // Build update object with only provided fields
+        const updateData = {};
+        if (start_add !== undefined) updateData.start_add = start_add;
+        if (start_index !== undefined) updateData.start_index = start_index;
+        if (end_index !== undefined) updateData.end_index = end_index;
+        if (end_add !== undefined) updateData.end_add = end_add;
 
-        // if (start_index < 0 || end_index < 0) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Indices must be non-negative numbers'
-        //     });
-        // }
-
-        // if (start_index > end_index) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Start index must be less than or equal to end index'
-        //     });
-        // }
-
-        const formatter = await PasswordFormatter.create({
-            start_add,
-            start_index,
-            end_index,
-            end_add
-        });
+        const formatter = await PasswordFormatter.create(updateData);
 
         res.status(201).json({
             success: true,
@@ -136,31 +114,7 @@ const updatePasswordFormatter = async (req, res) => {
     try {
         const { start_add, start_index, end_index, end_add } = req.body;
 
-        if (!start_add || start_index === undefined || !end_index || !end_add) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Please provide start_add, start_index, end_index, and end_add'
-            });
-        }
-
-        if (start_index < 0 || end_index < 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Indices must be non-negative numbers'
-            });
-        }
-
-        if (start_index > end_index) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Start index must be less than or equal to end index'
-            });
-        }
-
-        let formatter = await PasswordFormatter.findById(req.params.id);
+        const formatter = await PasswordFormatter.findById(req.params.id);
 
         if (!formatter) {
             return res.status(404).json({
@@ -180,10 +134,11 @@ const updatePasswordFormatter = async (req, res) => {
             });
         }
 
-        formatter.start_add = start_add;
-        formatter.start_index = start_index;
-        formatter.end_index = end_index;
-        formatter.end_add = end_add;
+        // Update only provided fields
+        if (start_add !== undefined) formatter.start_add = start_add;
+        if (start_index !== undefined) formatter.start_index = start_index;
+        if (end_index !== undefined) formatter.end_index = end_index;
+        if (end_add !== undefined) formatter.end_add = end_add;
 
         await formatter.save();
 

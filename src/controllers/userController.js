@@ -134,14 +134,6 @@ const updateUser = async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        if (user.role === 'superadmin' && req.user.role !== 'superadmin') {
-            return res.status(403).json({ success: false, message: 'Only superadmin can modify superadmin users' });
-        }
-
-        if (role === 'superadmin' && req.user.role !== 'superadmin') {
-            return res.status(403).json({ success: false, message: 'Only superadmin can assign superadmin role' });
-        }
-
         const updateData = {};
         if (name) updateData.name = name;
         if (email) updateData.email = email;
@@ -206,10 +198,6 @@ const toggleUserStatus = async (req, res) => {
         const user = await User.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
-        }
-
-        if (user.role === 'superadmin') {
-            return res.status(403).json({ success: false, message: 'Cannot deactivate superadmin user' });
         }
 
         if (user._id === req.user._id) {

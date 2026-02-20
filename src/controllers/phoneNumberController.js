@@ -104,40 +104,6 @@ const createPhoneNumber = async (req, res) => {
     try {
         const { country_code, number, browser_reset_time, password_formatters } = req.body;
 
-        // if (!country_code || !number || !browser_reset_time) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Please provide country_code, number, and browser_reset_time'
-        //     });
-        // }
-
-        // if (browser_reset_time < 1) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Browser reset time must be at least 1 minute'
-        //     });
-        // }
-
-        // const phoneRegex = /^\d+$/;
-        // if (!phoneRegex.test(number)) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Phone number should contain only digits'
-        //     });
-        // }
-
-        // const countryCodeRegex = /^\+\d+$/;
-        // if (!countryCodeRegex.test(country_code)) {
-        //     return res.status(400).json({
-        //         success: false,
-        //         error: 'Validation Error',
-        //         message: 'Country code should start with + followed by digits'
-        //     });
-        // }
-
         const pa_id = await PhoneNumber.generateNextPaId();
 
         const phoneNumber = await PhoneNumber.create({
@@ -174,40 +140,6 @@ const createPhoneNumber = async (req, res) => {
 const updatePhoneNumber = async (req, res) => {
     try {
         const { country_code, number, browser_reset_time, password_formatters } = req.body;
-
-        if (!country_code || !number || !browser_reset_time) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Please provide country_code, number, and browser_reset_time'
-            });
-        }
-
-        if (browser_reset_time < 1) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Browser reset time must be at least 1 minute'
-            });
-        }
-
-        const phoneRegex = /^\d+$/;
-        if (!phoneRegex.test(number)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Phone number should contain only digits'
-            });
-        }
-
-        const countryCodeRegex = /^\+\d+$/;
-        if (!countryCodeRegex.test(country_code)) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Country code should start with + followed by digits'
-            });
-        }
 
         let phoneNumber = await PhoneNumber.findById(req.params.id);
 
