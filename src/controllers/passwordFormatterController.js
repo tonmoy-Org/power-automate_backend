@@ -87,29 +87,29 @@ const createPasswordFormatter = async (req, res) => {
     try {
         const { start_add, start_index, end_index, end_add } = req.body;
 
-        if (!start_add || start_index === undefined || !end_index || !end_add) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Please provide start_add, start_index, end_index, and end_add'
-            });
-        }
+        // if (!start_add || start_index === undefined || !end_index || !end_add) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         error: 'Validation Error',
+        //         message: 'Please provide start_add, start_index, end_index, and end_add'
+        //     });
+        // }
 
-        if (start_index < 0 || end_index < 0) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Indices must be non-negative numbers'
-            });
-        }
+        // if (start_index < 0 || end_index < 0) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         error: 'Validation Error',
+        //         message: 'Indices must be non-negative numbers'
+        //     });
+        // }
 
-        if (start_index > end_index) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Start index must be less than or equal to end index'
-            });
-        }
+        // if (start_index > end_index) {
+        //     return res.status(400).json({
+        //         success: false,
+        //         error: 'Validation Error',
+        //         message: 'Start index must be less than or equal to end index'
+        //     });
+        // }
 
         const formatter = await PasswordFormatter.create({
             start_add,

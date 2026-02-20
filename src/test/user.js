@@ -6,7 +6,7 @@ const seed = async () => {
     await mongoose.connect('mongodb+srv://Vercel-Admin-atlas-indigo-mountain:iRZa21avCUKzwo6o@atlas-indigo-mountain.wacqtgn.mongodb.net/?retryWrites=true&w=majority');
 
     const users = [
-        { name: 'Super Admin', email: 'admin12@gmail.com', password: 'admin', role: 'superadmin', isActive: true },
+        { name: 'Super Admin', email: 'admin@gmail.com', password: 'admin', role: 'superadmin', isActive: true },
     ];
 
     for (const userData of users) {
