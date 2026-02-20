@@ -15,7 +15,7 @@ const options = {
         description: 'Development server',
       },
       {
-        url: 'https://your-production-url.com',
+        url: 'https://power-automate-fontend-vtln.vercel.app',
         description: 'Production server',
       },
     ],
