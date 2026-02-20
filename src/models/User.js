@@ -1,10 +1,8 @@
 const mongoose = require('mongoose');
-const bcryptjs = require('bcryptjs');
 
 const deviceSchema = new mongoose.Schema({
   deviceId: {
     type: String,
-    required: true
   },
   browser: {
     type: String
