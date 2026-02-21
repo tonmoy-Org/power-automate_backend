@@ -388,46 +388,6 @@ const options = {
           },
         },
       },
-      // ── NEW ROUTES ────────────────────────────────
-      '/api/phone-numbers/random-phone/{pa_id}': {
-        get: {
-          tags: ['Phone Numbers'],
-          summary: 'Get a random inactive phone number by PA ID',
-          parameters: [
-            {
-              name: 'pa_id',
-              in: 'path',
-              required: true,
-              schema: { type: 'string' },
-              description: 'Power Automate ID',
-            },
-          ],
-          responses: {
-            200: { description: 'Random inactive phone number for the given PA ID' },
-            404: { description: 'No inactive phone numbers found for this PA ID' },
-          },
-        },
-      },
-      '/api/phone-numbers/phone-by-pa/{pa_id}': {
-        get: {
-          tags: ['Phone Numbers'],
-          summary: 'Get all phone numbers by PA ID',
-          parameters: [
-            {
-              name: 'pa_id',
-              in: 'path',
-              required: true,
-              schema: { type: 'string' },
-              description: 'Power Automate ID',
-            },
-          ],
-          responses: {
-            200: { description: 'List of phone numbers associated with the given PA ID' },
-            404: { description: 'No phone numbers found for this PA ID' },
-          },
-        },
-      },
-      // ─────────────────────────────────────────────
       '/api/phone-numbers/{id}': {
         get: {
           tags: ['Phone Numbers'],
@@ -559,17 +519,19 @@ const options = {
       },
     },
   },
-  apis: [],
+  apis: [], // using inline definition above
 };
 
 const swaggerSpec = swaggerJsdoc(options);
 
 const setupSwagger = (app) => {
+  // Expose raw JSON spec
   app.get('/api/docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
   });
 
+  // Serve Swagger UI via CDN — fixes "SwaggerUIBundle is not defined" on hosted platforms
   app.get('/api/docs', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(`
