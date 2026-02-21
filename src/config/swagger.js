@@ -66,6 +66,24 @@ const options = {
             email: { type: 'string', format: 'email' },
           },
         },
+
+        // ── Device ─────────────────────────────────────────────
+        Device: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            deviceId: { type: 'string' },
+            browser: { type: 'string' },
+            browserVersion: { type: 'string' },
+            os: { type: 'string' },
+            osVersion: { type: 'string' },
+            deviceType: { type: 'string' },
+            deviceName: { type: 'string' },
+            ipAddress: { type: 'string' },
+            lastLogin: { type: 'string', format: 'date-time' },
+          },
+        },
+
         // ── User ─────────────────────────────────────────────
         User: {
           type: 'object',
@@ -75,7 +93,13 @@ const options = {
             email: { type: 'string', format: 'email' },
             role: { type: 'string', enum: ['superadmin', 'member', 'client'] },
             isActive: { type: 'boolean' },
+            department: { type: 'string', default: 'General' },
+            devices: { 
+              type: 'array',
+              items: { $ref: '#/components/schemas/Device' }
+            },
             createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
           },
         },
         CreateUserRequest: {
@@ -86,64 +110,106 @@ const options = {
             email: { type: 'string', format: 'email' },
             password: { type: 'string', minLength: 6 },
             role: { type: 'string', enum: ['superadmin', 'member', 'client'] },
+            department: { type: 'string', default: 'General' },
           },
         },
+
+        // ── Password Formatter (for embedding) ────────────────
+        EmbeddedPasswordFormatter: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            start_add: { type: 'string' },
+            start_index: { type: 'number', minimum: 0 },
+            end_index: { type: 'number', minimum: 0 },
+            end_add: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+
+        // ── Password Formatter (main) ─────────────────────────
+        PasswordFormatter: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            start_add: { type: 'string' },
+            start_index: { type: 'number', minimum: 0 },
+            end_index: { type: 'number', minimum: 0 },
+            end_add: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        PasswordFormatterRequest: {
+          type: 'object',
+          required: ['start_add', 'start_index', 'end_index', 'end_add'],
+          properties: {
+            start_add: { type: 'string', example: 'prefix_' },
+            start_index: { type: 'number', minimum: 0, example: 0 },
+            end_index: { type: 'number', minimum: 0, example: 5 },
+            end_add: { type: 'string', example: '_suffix' },
+          },
+        },
+
         // ── Phone Number ──────────────────────────────────────
         PhoneNumber: {
           type: 'object',
           properties: {
             _id: { type: 'string' },
-            number: { type: 'string' },
-            isActive: { type: 'boolean' },
+            pa_id: { type: 'string', example: 'PA_101' },
+            country_code: { type: 'string', example: '+1' },
+            number: { type: 'string', example: '5550123456' },
+            is_active: { type: 'boolean', default: false },
+            browser_reset_time: { type: 'number', minimum: 1, default: 10 },
+            password_formatters: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/EmbeddedPasswordFormatter' }
+            },
             createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
           },
         },
         PhoneNumberRequest: {
           type: 'object',
-          required: ['number'],
+          required: ['country_code', 'number'],
           properties: {
-            number: { type: 'string', example: '+1234567890' },
-            isActive: { type: 'boolean', default: false },
+            pa_id: { type: 'string', example: 'PA_101' },
+            country_code: { type: 'string', example: '+1' },
+            number: { type: 'string', example: '5550123456' },
+            is_active: { type: 'boolean', default: false },
+            browser_reset_time: { type: 'number', minimum: 1, default: 10 },
+            password_formatters: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/PasswordFormatterRequest' }
+            },
           },
         },
-        // ── Password Formatter ────────────────────────────────
-        PasswordFormatter: {
-          type: 'object',
-          properties: {
-            _id: { type: 'string' },
-            name: { type: 'string' },
-            pattern: { type: 'string' },
-            createdAt: { type: 'string', format: 'date-time' },
-          },
-        },
-        PasswordFormatterRequest: {
-          type: 'object',
-          required: ['name', 'pattern'],
-          properties: {
-            name: { type: 'string' },
-            pattern: { type: 'string' },
-          },
-        },
+
         // ── Phone Credential ──────────────────────────────────
         PhoneCredential: {
           type: 'object',
           properties: {
             _id: { type: 'string' },
-            phoneNumber: { type: 'string' },
-            username: { type: 'string' },
-            password: { type: 'string' },
+            pa_id: { type: 'string', example: 'PA_101' },
+            phone: { type: 'string', example: '+15550123456' },
+            type: { type: 'string', example: 'voip' },
+            password: { type: 'string', example: 'encrypted_password' },
             createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
           },
         },
         PhoneCredentialRequest: {
           type: 'object',
-          required: ['phoneNumber', 'username', 'password'],
+          required: ['pa_id', 'phone', 'password'],
           properties: {
-            phoneNumber: { type: 'string' },
-            username: { type: 'string' },
-            password: { type: 'string' },
+            pa_id: { type: 'string', example: 'PA_101' },
+            phone: { type: 'string', example: '+15550123456' },
+            type: { type: 'string', example: 'voip' },
+            password: { type: 'string', example: 'user_password' },
           },
         },
+
         // ── Generic ───────────────────────────────────────────
         SuccessResponse: {
           type: 'object',
@@ -175,7 +241,24 @@ const options = {
           responses: {
             200: {
               description: 'Server is running',
-              content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } },
+              content: { 
+                'application/json': { 
+                  schema: { 
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Server is running' },
+                      data: { 
+                        type: 'object',
+                        properties: {
+                          timestamp: { type: 'string', format: 'date-time' },
+                          uptime: { type: 'number' }
+                        }
+                      }
+                    }
+                  } 
+                } 
+              },
             },
           },
         },
@@ -188,14 +271,48 @@ const options = {
         post: {
           tags: ['Auth'],
           summary: 'Login user',
+          description: 'Authenticate user and return JWT token',
           security: [],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/LoginRequest' } 
+              } 
+            },
           },
           responses: {
-            200: { description: 'Login successful', content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } } },
-            401: { description: 'Invalid credentials', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } } },
+            200: { 
+              description: 'Login successful', 
+              content: { 
+                'application/json': { 
+                  schema: { 
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: {
+                            type: 'object',
+                            properties: {
+                              token: { type: 'string' },
+                              user: { $ref: '#/components/schemas/User' }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  } 
+                } 
+              } 
+            },
+            401: { 
+              description: 'Invalid credentials', 
+              content: { 
+                'application/json': { 
+                  schema: { $ref: '#/components/schemas/ErrorResponse' } 
+                } 
+              } 
+            },
           },
         },
       },
@@ -206,11 +323,35 @@ const options = {
           security: [],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/ForgotPasswordRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/ForgotPasswordRequest' } 
+              } 
+            },
           },
           responses: {
-            200: { description: 'Reset email sent' },
-            404: { description: 'User not found' },
+            200: { 
+              description: 'Reset email sent',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Password reset email sent' }
+                    }
+                  }
+                }
+              }
+            },
+            404: { 
+              description: 'User not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -221,11 +362,35 @@ const options = {
           security: [],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/ResetPasswordRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/ResetPasswordRequest' } 
+              } 
+            },
           },
           responses: {
-            200: { description: 'Password reset successful' },
-            400: { description: 'Invalid or expired token' },
+            200: { 
+              description: 'Password reset successful',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Password reset successful' }
+                    }
+                  }
+                }
+              }
+            },
+            400: { 
+              description: 'Invalid or expired token',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -235,11 +400,37 @@ const options = {
           summary: 'Validate password reset token',
           security: [],
           parameters: [
-            { name: 'token', in: 'path', required: true, schema: { type: 'string' } },
+            { 
+              name: 'token', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Reset token from email'
+            },
           ],
           responses: {
-            200: { description: 'Token is valid' },
-            400: { description: 'Token is invalid or expired' },
+            200: { 
+              description: 'Token is valid',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Token is valid' }
+                    }
+                  }
+                }
+              }
+            },
+            400: { 
+              description: 'Token is invalid or expired',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -247,9 +438,33 @@ const options = {
         get: {
           tags: ['Auth'],
           summary: 'Get current authenticated user',
+          security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'Current user data', content: { 'application/json': { schema: { $ref: '#/components/schemas/SuccessResponse' } } } },
-            401: { description: 'Unauthorized' },
+            200: { 
+              description: 'Current user data', 
+              content: { 
+                'application/json': { 
+                  schema: { 
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  } 
+                } 
+              } 
+            },
+            401: { 
+              description: 'Unauthorized',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -257,13 +472,41 @@ const options = {
         put: {
           tags: ['Auth'],
           summary: 'Update user profile',
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/UpdateProfileRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/UpdateProfileRequest' } 
+              } 
+            },
           },
           responses: {
-            200: { description: 'Profile updated' },
-            401: { description: 'Unauthorized' },
+            200: { 
+              description: 'Profile updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            401: { 
+              description: 'Unauthorized',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -271,14 +514,46 @@ const options = {
         put: {
           tags: ['Auth'],
           summary: 'Change password (authenticated)',
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/ChangePasswordRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/ChangePasswordRequest' } 
+              } 
+            },
           },
           responses: {
-            200: { description: 'Password changed successfully' },
-            400: { description: 'Current password incorrect' },
-            401: { description: 'Unauthorized' },
+            200: { 
+              description: 'Password changed successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Password changed successfully' }
+                    }
+                  }
+                }
+              }
+            },
+            400: { 
+              description: 'Current password incorrect',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
+            401: { 
+              description: 'Unauthorized',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -290,9 +565,36 @@ const options = {
         get: {
           tags: ['Users'],
           summary: 'Get all users (superadmin only)',
+          security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'List of users' },
-            403: { description: 'Forbidden' },
+            200: { 
+              description: 'List of users',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/User' }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            403: { 
+              description: 'Forbidden',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -300,14 +602,49 @@ const options = {
         post: {
           tags: ['Users'],
           summary: 'Create a new user (superadmin only)',
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateUserRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/CreateUserRequest' } 
+              } 
+            },
           },
           responses: {
-            201: { description: 'User created' },
-            400: { description: 'Validation error' },
-            403: { description: 'Forbidden' },
+            201: { 
+              description: 'User created',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            400: { 
+              description: 'Validation error',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
+            403: { 
+              description: 'Forbidden',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -315,32 +652,129 @@ const options = {
         get: {
           tags: ['Users'],
           summary: 'Get user by ID (superadmin only)',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'User ID'
+            }
+          ],
           responses: {
-            200: { description: 'User found' },
-            404: { description: 'User not found' },
+            200: { 
+              description: 'User found',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            404: { 
+              description: 'User not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
         put: {
           tags: ['Users'],
           summary: 'Update user (superadmin only)',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'User ID'
+            }
+          ],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/CreateUserRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/CreateUserRequest' } 
+              } 
+            },
           },
           responses: {
-            200: { description: 'User updated' },
-            404: { description: 'User not found' },
+            200: { 
+              description: 'User updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            404: { 
+              description: 'User not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
         delete: {
           tags: ['Users'],
           summary: 'Delete user (superadmin only)',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'User ID'
+            }
+          ],
           responses: {
-            200: { description: 'User deleted' },
-            404: { description: 'User not found' },
+            200: { 
+              description: 'User deleted',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'User deleted successfully' }
+                    }
+                  }
+                }
+              }
+            },
+            404: { 
+              description: 'User not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -348,10 +782,42 @@ const options = {
         patch: {
           tags: ['Users'],
           summary: 'Toggle user active/inactive status (superadmin only)',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'User ID'
+            }
+          ],
           responses: {
-            200: { description: 'Status toggled' },
-            404: { description: 'User not found' },
+            200: { 
+              description: 'Status toggled',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/User' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            404: { 
+              description: 'User not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -363,18 +829,68 @@ const options = {
         get: {
           tags: ['Phone Numbers'],
           summary: 'Get all phone numbers',
-          responses: { 200: { description: 'List of phone numbers' } },
+          security: [{ bearerAuth: [] }],
+          responses: { 
+            200: { 
+              description: 'List of phone numbers',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/PhoneNumber' }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
         post: {
           tags: ['Phone Numbers'],
           summary: 'Create a phone number',
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PhoneNumberRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/PhoneNumberRequest' } 
+              } 
+            },
           },
           responses: {
-            201: { description: 'Phone number created' },
-            400: { description: 'Validation error' },
+            201: { 
+              description: 'Phone number created',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneNumber' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            400: { 
+              description: 'Validation error',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -382,9 +898,33 @@ const options = {
         get: {
           tags: ['Phone Numbers'],
           summary: 'Get a random inactive phone number',
+          security: [{ bearerAuth: [] }],
           responses: {
-            200: { description: 'Random inactive phone number' },
-            404: { description: 'No inactive phone numbers found' },
+            200: { 
+              description: 'Random inactive phone number',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneNumber' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            404: { 
+              description: 'No inactive phone numbers found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            },
           },
         },
       },
@@ -392,24 +932,130 @@ const options = {
         get: {
           tags: ['Phone Numbers'],
           summary: 'Get phone number by ID',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Phone number found' }, 404: { description: 'Not found' } },
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Number ID'
+            }
+          ],
+          responses: { 
+            200: { 
+              description: 'Phone number found',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneNumber' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }, 
+            404: { 
+              description: 'Not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            } 
+          },
         },
         put: {
           tags: ['Phone Numbers'],
           summary: 'Update phone number',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Number ID'
+            }
+          ],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PhoneNumberRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/PhoneNumberRequest' } 
+              } 
+            },
           },
-          responses: { 200: { description: 'Updated' }, 404: { description: 'Not found' } },
+          responses: { 
+            200: { 
+              description: 'Updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneNumber' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }, 
+            404: { 
+              description: 'Not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            } 
+          },
         },
         delete: {
           tags: ['Phone Numbers'],
           summary: 'Delete phone number',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Deleted' }, 404: { description: 'Not found' } },
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Number ID'
+            }
+          ],
+          responses: { 
+            200: { 
+              description: 'Deleted',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Phone number deleted successfully' }
+                    }
+                  }
+                }
+              }
+            }, 
+            404: { 
+              description: 'Not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            } 
+          },
         },
       },
 
@@ -420,47 +1066,213 @@ const options = {
         get: {
           tags: ['Password Formatters'],
           summary: 'Get all password formatters',
-          responses: { 200: { description: 'List of password formatters' } },
+          security: [{ bearerAuth: [] }],
+          responses: { 
+            200: { 
+              description: 'List of password formatters',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/PasswordFormatter' }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
         post: {
           tags: ['Password Formatters'],
           summary: 'Create a password formatter',
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PasswordFormatterRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/PasswordFormatterRequest' } 
+              } 
+            },
           },
-          responses: { 201: { description: 'Created' } },
+          responses: { 
+            201: { 
+              description: 'Created',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PasswordFormatter' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
       },
       '/api/password-formatters/list': {
         get: {
           tags: ['Password Formatters'],
           summary: 'Get password formatters list (simplified)',
-          responses: { 200: { description: 'Simplified list' } },
+          security: [{ bearerAuth: [] }],
+          responses: { 
+            200: { 
+              description: 'Simplified list',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                _id: { type: 'string' },
+                                name: { 
+                                  type: 'string',
+                                  description: 'Virtual field combining start_add and end_add'
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
       },
       '/api/password-formatters/{id}': {
         get: {
           tags: ['Password Formatters'],
           summary: 'Get password formatter by ID',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Found' }, 404: { description: 'Not found' } },
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Password Formatter ID'
+            }
+          ],
+          responses: { 
+            200: { 
+              description: 'Found',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PasswordFormatter' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }, 
+            404: { 
+              description: 'Not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            } 
+          },
         },
         put: {
           tags: ['Password Formatters'],
           summary: 'Update password formatter',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Password Formatter ID'
+            }
+          ],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PasswordFormatterRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/PasswordFormatterRequest' } 
+              } 
+            },
           },
-          responses: { 200: { description: 'Updated' } },
+          responses: { 
+            200: { 
+              description: 'Updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PasswordFormatter' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
         delete: {
           tags: ['Password Formatters'],
           summary: 'Delete password formatter',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Deleted' } },
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Password Formatter ID'
+            }
+          ],
+          responses: { 
+            200: { 
+              description: 'Deleted',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Password formatter deleted successfully' }
+                    }
+                  }
+                }
+              }
+            } 
+          },
         },
       },
 
@@ -471,50 +1283,224 @@ const options = {
         get: {
           tags: ['Phone Credentials'],
           summary: 'Get all phone credentials',
-          responses: { 200: { description: 'List of credentials' } },
+          security: [{ bearerAuth: [] }],
+          responses: { 
+            200: { 
+              description: 'List of credentials',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: {
+                            type: 'array',
+                            items: { $ref: '#/components/schemas/PhoneCredential' }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
         post: {
           tags: ['Phone Credentials'],
           summary: 'Create a phone credential',
+          security: [{ bearerAuth: [] }],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PhoneCredentialRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/PhoneCredentialRequest' } 
+              } 
+            },
           },
-          responses: { 201: { description: 'Created' } },
+          responses: { 
+            201: { 
+              description: 'Created',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneCredential' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
       },
       '/api/phone-credentials/{id}': {
         get: {
           tags: ['Phone Credentials'],
           summary: 'Get phone credential by ID',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Found' }, 404: { description: 'Not found' } },
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Credential ID'
+            }
+          ],
+          responses: { 
+            200: { 
+              description: 'Found',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneCredential' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }, 
+            404: { 
+              description: 'Not found',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' }
+                }
+              }
+            } 
+          },
         },
         put: {
           tags: ['Phone Credentials'],
           summary: 'Update phone credential (full)',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Credential ID'
+            }
+          ],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PhoneCredentialRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { $ref: '#/components/schemas/PhoneCredentialRequest' } 
+              } 
+            },
           },
-          responses: { 200: { description: 'Updated' } },
+          responses: { 
+            200: { 
+              description: 'Updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneCredential' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
         patch: {
           tags: ['Phone Credentials'],
           summary: 'Update phone credential (partial)',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Credential ID'
+            }
+          ],
           requestBody: {
             required: true,
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/PhoneCredentialRequest' } } },
+            content: { 
+              'application/json': { 
+                schema: { 
+                  type: 'object',
+                  properties: {
+                    pa_id: { type: 'string' },
+                    phone: { type: 'string' },
+                    type: { type: 'string' },
+                    password: { type: 'string' }
+                  }
+                } 
+              } 
+            },
           },
-          responses: { 200: { description: 'Updated' } },
+          responses: { 
+            200: { 
+              description: 'Updated',
+              content: {
+                'application/json': {
+                  schema: {
+                    allOf: [
+                      { $ref: '#/components/schemas/SuccessResponse' },
+                      {
+                        properties: {
+                          data: { $ref: '#/components/schemas/PhoneCredential' }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            } 
+          },
         },
         delete: {
           tags: ['Phone Credentials'],
           summary: 'Delete phone credential',
-          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-          responses: { 200: { description: 'Deleted' } },
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { 
+              name: 'id', 
+              in: 'path', 
+              required: true, 
+              schema: { type: 'string' },
+              description: 'Phone Credential ID'
+            }
+          ],
+          responses: { 
+            200: { 
+              description: 'Deleted',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean', example: true },
+                      message: { type: 'string', example: 'Phone credential deleted successfully' }
+                    }
+                  }
+                }
+              }
+            } 
+          },
         },
       },
     },
@@ -531,7 +1517,7 @@ const setupSwagger = (app) => {
     res.send(swaggerSpec);
   });
 
-  // Serve Swagger UI via CDN — fixes "SwaggerUIBundle is not defined" on hosted platforms
+  // Serve Swagger UI via CDN
   app.get('/api/docs', (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(`
