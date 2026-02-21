@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 const seed = async () => {
-    await mongoose.connect('mongodb+srv://Vercel-Admin-atlas-indigo-mountain:iRZa21avCUKzwo6o@atlas-indigo-mountain.wacqtgn.mongodb.net/?retryWrites=true&w=majority');
+    await mongoose.connect('mongodb://localhost:27017/financeDB');
 
     const users = [
         { name: 'Super Admin', email: 'admin@gmail.com', password: 'admin', role: 'superadmin', isActive: true },

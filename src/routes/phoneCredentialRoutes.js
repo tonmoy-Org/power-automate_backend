@@ -5,8 +5,8 @@ const { protect } = require('../middleware/authMiddleware');
 
 // Routes
 router.route('/')
-    .post(protect, controller.createCredential)
-    .get(protect, controller.getCredentials);
+    .get(protect, controller.getCredentials)
+    .post(protect, controller.createCredential);
 
 router.route('/:id')
     .get(protect, controller.getCredentialById)

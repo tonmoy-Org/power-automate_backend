@@ -12,11 +12,11 @@ const seed = async () => {
     }
 
     const dummyData = [
-        { pa_id: 'PA_102', phone: '01711000001', password: 'pass1234', type: 'A' },
-        { pa_id: 'PA_102', phone: '01711000002', password: 'pass5678', type: 'B' },
-        { pa_id: 'PA_102', phone: '01711000003', password: 'pass9012', type: 'C' },
-        { pa_id: 'PA_102', phone: '01711000004', password: 'pass3456', type: 'A' },
-        { pa_id: 'PA_102', phone: '01711000005', password: 'pass7890', type: 'B' },
+        { pa_id: 'PA_102', phone: '45345345', password: 'pass1234', type: 'A' },
+        { pa_id: 'PA_102', phone: '45345345', password: 'pass5678', type: 'B' },
+        { pa_id: 'PA_102', phone: '45345345', password: 'pass9012', type: 'C' },
+        { pa_id: 'PA_102', phone: '45345345', password: 'pass3456', type: 'A' },
+        { pa_id: 'PA_102', phone: '45345345', password: 'pass7890', type: 'B' },
     ];
 
     await PhoneCredential.insertMany(dummyData);

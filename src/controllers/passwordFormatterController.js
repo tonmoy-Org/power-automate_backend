@@ -1,5 +1,5 @@
 const PasswordFormatter = require('../models/PasswordFormatter');
-const PhoneNumber = require('../models/PhoneNumber');
+const mongoose = require('mongoose');
 
 const getPasswordFormatters = async (req, res) => {
     try {
@@ -87,7 +87,6 @@ const createPasswordFormatter = async (req, res) => {
     try {
         const { start_add, start_index, end_index, end_add } = req.body;
 
-        // Build update object with only provided fields
         const updateData = {};
         if (start_add !== undefined) updateData.start_add = start_add;
         if (start_index !== undefined) updateData.start_index = start_index;
@@ -124,17 +123,6 @@ const updatePasswordFormatter = async (req, res) => {
             });
         }
 
-        const isInUse = await PasswordFormatter.isInUse(formatter._id);
-
-        if (isInUse) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Cannot update formatter that is currently in use by phone numbers'
-            });
-        }
-
-        // Update only provided fields
         if (start_add !== undefined) formatter.start_add = start_add;
         if (start_index !== undefined) formatter.start_index = start_index;
         if (end_index !== undefined) formatter.end_index = end_index;
@@ -158,7 +146,20 @@ const updatePasswordFormatter = async (req, res) => {
 
 const deletePasswordFormatter = async (req, res) => {
     try {
-        const formatter = await PasswordFormatter.findById(req.params.id);
+        const { id } = req.params;
+
+        // Validate the ID is a valid ObjectId — prevents a bad ID from
+        // accidentally matching many documents or throwing a CastError
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Validation Error',
+                message: 'Invalid formatter ID'
+            });
+        }
+
+        // Find the exact single document by its unique _id
+        const formatter = await PasswordFormatter.findById(id);
 
         if (!formatter) {
             return res.status(404).json({
@@ -168,21 +169,15 @@ const deletePasswordFormatter = async (req, res) => {
             });
         }
 
-        const isInUse = await PasswordFormatter.isInUse(formatter._id);
-
-        if (isInUse) {
-            return res.status(400).json({
-                success: false,
-                error: 'Validation Error',
-                message: 'Cannot delete formatter that is currently in use by phone numbers'
-            });
-        }
-
+        // deleteOne() on the document instance:
+        // - deletes ONLY this one document (scoped to _id internally)
+        // - triggers the pre('deleteOne', { document: true }) hook
+        //   which removes this formatter's ID from all PhoneNumbers automatically
         await formatter.deleteOne();
 
         res.status(200).json({
             success: true,
-            message: 'Password formatter deleted successfully'
+            message: `Password formatter '${formatter.start_add} → ${formatter.end_add}' deleted successfully`
         });
     } catch (error) {
         res.status(500).json({

@@ -1,4 +1,33 @@
 const PhoneNumber = require('../models/PhoneNumber');
+const PhoneCredential = require('../models/PhoneCredential');
+
+// Helper: extract only ObjectId strings from password_formatters,
+// whether the client sends a JSON string, array of objects, or array of ID strings
+const parseFormatterIds = (password_formatters) => {
+    if (!password_formatters) return [];
+
+    let formatters = password_formatters;
+
+    // If it came in as a JSON string (e.g. from multipart/form-data), parse it first
+    if (typeof formatters === 'string') {
+        try {
+            formatters = JSON.parse(formatters);
+        } catch {
+            return [];
+        }
+    }
+
+    if (!Array.isArray(formatters)) return [];
+
+    // Each item may be an ObjectId string or an object with an `id` or `_id` field
+    return formatters.map((item) => {
+        if (typeof item === 'string') return item;
+        if (typeof item === 'object' && item !== null) {
+            return item._id || item.id || null;
+        }
+        return null;
+    }).filter(Boolean);
+};
 
 const getPhoneNumbers = async (req, res) => {
     try {
@@ -20,6 +49,7 @@ const getPhoneNumbers = async (req, res) => {
         const total = await PhoneNumber.countDocuments(query);
 
         const phoneNumbers = await PhoneNumber.find(query)
+            .populate('password_formatters')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
@@ -45,7 +75,8 @@ const getPhoneNumbers = async (req, res) => {
 
 const getPhoneNumberById = async (req, res) => {
     try {
-        const phoneNumber = await PhoneNumber.findById(req.params.id);
+        const phoneNumber = await PhoneNumber.findById(req.params.id)
+            .populate('password_formatters');
 
         if (!phoneNumber) {
             return res.status(404).json({
@@ -91,7 +122,9 @@ const getRandomInactivePhoneNumber = async (req, res) => {
 
         const randomIndex = Math.floor(Math.random() * count);
 
-        const phoneNumber = await PhoneNumber.findOne(filter).skip(randomIndex);
+        const phoneNumber = await PhoneNumber.findOne(filter)
+            .skip(randomIndex)
+            .populate('password_formatters');
 
         phoneNumber.is_active = true;
         await phoneNumber.save();
@@ -100,7 +133,6 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             success: true,
             data: phoneNumber
         });
-
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -114,6 +146,8 @@ const createPhoneNumber = async (req, res) => {
     try {
         const { country_code, number, browser_reset_time, password_formatters } = req.body;
 
+        const formatterIds = parseFormatterIds(password_formatters);
+
         const pa_id = await PhoneNumber.generateNextPaId();
 
         const phoneNumber = await PhoneNumber.create({
@@ -121,9 +155,11 @@ const createPhoneNumber = async (req, res) => {
             country_code,
             number,
             browser_reset_time,
-            password_formatters: password_formatters || [],
+            password_formatters: formatterIds,
             is_active: false
         });
+
+        await phoneNumber.populate('password_formatters');
 
         res.status(201).json({
             success: true,
@@ -149,7 +185,10 @@ const createPhoneNumber = async (req, res) => {
 
 const updatePhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, browser_reset_time, password_formatters } = req.body;
+        // ✅ is_active is now read from the request body
+        const { country_code, number, browser_reset_time, password_formatters, is_active } = req.body;
+
+        const formatterIds = parseFormatterIds(password_formatters);
 
         let phoneNumber = await PhoneNumber.findById(req.params.id);
 
@@ -164,9 +203,16 @@ const updatePhoneNumber = async (req, res) => {
         phoneNumber.country_code = country_code;
         phoneNumber.number = number;
         phoneNumber.browser_reset_time = browser_reset_time;
-        phoneNumber.password_formatters = password_formatters || [];
+        phoneNumber.password_formatters = formatterIds;
+
+        // ✅ Only update is_active if it was explicitly sent in the request
+        if (is_active !== undefined) {
+            phoneNumber.is_active = is_active;
+        }
 
         await phoneNumber.save();
+
+        await phoneNumber.populate('password_formatters');
 
         res.status(200).json({
             success: true,
@@ -193,6 +239,9 @@ const deletePhoneNumber = async (req, res) => {
                 message: 'Phone number not found'
             });
         }
+
+        // Cascade delete: remove all PhoneCredentials linked to this pa_id
+        await PhoneCredential.deleteMany({ pa_id: phoneNumber.pa_id });
 
         await phoneNumber.deleteOne();
 

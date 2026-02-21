@@ -16,6 +16,7 @@ const passwordFormatterSchema = new mongoose.Schema({
     end_add: {
         type: String,
         required: false,
+        trim: true
     }
 }, {
     timestamps: true
@@ -23,17 +24,27 @@ const passwordFormatterSchema = new mongoose.Schema({
 
 passwordFormatterSchema.index({ start_add: 'text', end_add: 'text' });
 
-passwordFormatterSchema.virtual('description').get(function() {
+passwordFormatterSchema.virtual('description').get(function () {
     return `${this.start_add} (${this.start_index}) → ${this.end_add} (${this.end_index})`;
 });
 
-passwordFormatterSchema.statics.isInUse = async function(formatterId) {
+// Check if this formatter is referenced by any PhoneNumber
+passwordFormatterSchema.statics.isInUse = async function (formatterId) {
     const PhoneNumber = mongoose.model('PhoneNumber');
     const count = await PhoneNumber.countDocuments({
-        'password_formatters.id': formatterId.toString()
+        password_formatters: formatterId
     });
     return count > 0;
 };
+
+// When a formatter is deleted, remove its ID from all phone numbers automatically
+passwordFormatterSchema.pre('deleteOne', { document: true, query: false }, async function () {
+    const PhoneNumber = mongoose.model('PhoneNumber');
+    await PhoneNumber.updateMany(
+        { password_formatters: this._id },
+        { $pull: { password_formatters: this._id } }
+    );
+});
 
 const PasswordFormatter = mongoose.model('PasswordFormatter', passwordFormatterSchema);
 
