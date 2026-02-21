@@ -3,22 +3,21 @@ const mongoose = require('mongoose');
 const passwordFormatterSchema = new mongoose.Schema({
     start_add: {
         type: String,
-        required: true,
+        required: false,
         trim: true
     },
     start_index: {
         type: Number,
-        required: true,
+        required: false,
         min: 0
     },
     end_index: {
         type: Number,
-        required: true,
         min: 0
     },
     end_add: {
         type: String,
-        required: true,
+        required: false,
         trim: true
     }
 }, {
@@ -48,7 +47,7 @@ const phoneNumberSchema = new mongoose.Schema({
     },
     browser_reset_time: {
         type: Number,
-        required: true,
+        required: false,
         min: 1,
         default: 10
     },
