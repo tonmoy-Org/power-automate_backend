@@ -6,7 +6,6 @@ const userRoutes = require('./routes/userRoutes');
 const phoneNumberRoutes = require('./routes/phoneNumberRoutes');
 const passwordFormatterRoutes = require('./routes/passwordFormatterRoutes');
 const phoneCredentialRoutes = require('./routes/phoneCredentialRoutes');
-const setupSwagger = require('./config/swagger');
 
 const app = express();
 
@@ -31,7 +30,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-setupSwagger(app);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
