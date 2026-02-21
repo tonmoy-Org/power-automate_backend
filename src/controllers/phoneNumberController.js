@@ -43,22 +43,27 @@ const getPhoneNumbers = async (req, res) => {
     }
 };
 
-const getPhoneNumberById = async (req, res) => {
+const getPhoneNumberByPaId = async (req, res) => {
     try {
-        const phoneNumber = await PhoneNumber.findById(req.params.id);
 
-        if (!phoneNumber) {
+        const { pa_id } = req.params;
+
+        const phoneNumbers = await PhoneNumber.find({ pa_id: pa_id });
+
+        if (!phoneNumbers || phoneNumbers.length === 0) {
             return res.status(404).json({
                 success: false,
                 error: 'Not Found',
-                message: 'Phone number not found'
+                message: 'No phone numbers found for this pa_id'
             });
         }
 
         res.status(200).json({
             success: true,
-            data: phoneNumber
+            count: phoneNumbers.length,
+            data: phoneNumbers
         });
+
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -91,6 +96,47 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             success: true,
             data: phoneNumber
         });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server Error',
+            message: error.message
+        });
+    }
+};
+
+const getRandomInactivePhoneNumberByPaId = async (req, res) => {
+    try {
+        const { pa_id } = req.params;
+
+        const count = await PhoneNumber.countDocuments({
+            is_active: false,
+            pa_id: pa_id
+        });
+
+        if (count === 0) {
+            return res.status(404).json({
+                success: false,
+                error: 'Not Found',
+                message: 'No inactive phone numbers available for this pa_id'
+            });
+        }
+
+        const randomIndex = Math.floor(Math.random() * count);
+
+        const phoneNumber = await PhoneNumber.findOne({
+            is_active: false,
+            pa_id: pa_id
+        }).skip(randomIndex);
+
+        phoneNumber.is_active = true;
+        await phoneNumber.save();
+
+        res.status(200).json({
+            success: true,
+            data: phoneNumber
+        });
+
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -201,8 +247,9 @@ const deletePhoneNumber = async (req, res) => {
 
 module.exports = {
     getPhoneNumbers,
-    getPhoneNumberById,
+    getPhoneNumberByPaId,
     getRandomInactivePhoneNumber,
+    getRandomInactivePhoneNumberByPaId,
     createPhoneNumber,
     updatePhoneNumber,
     deletePhoneNumber
