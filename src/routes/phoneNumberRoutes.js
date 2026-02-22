@@ -5,6 +5,7 @@ const {
     getPhoneNumberById,
     createPhoneNumber,
     updatePhoneNumber,
+    patchPhoneNumber,
     deletePhoneNumber,
     getRandomInactivePhoneNumber
 } = require('../controllers/phoneNumberController');
@@ -19,6 +20,7 @@ router.route('/')
 router.route('/:id')
     .get(protect, getPhoneNumberById)
     .put(protect, updatePhoneNumber)
+    .patch(protect, patchPhoneNumber)  
     .delete(protect, deletePhoneNumber);
 
 module.exports = router;

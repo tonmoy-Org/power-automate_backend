@@ -206,13 +206,67 @@ const updatePhoneNumber = async (req, res) => {
         }
 
         await phoneNumber.save();
-
         await phoneNumber.populate('password_formatters');
 
         res.status(200).json({
             success: true,
             data: phoneNumber,
             message: 'Phone number updated successfully'
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+const patchPhoneNumber = async (req, res) => {
+    try {
+        const { country_code, number, browser_reset_time, password_formatters, is_active } = req.body;
+
+        const phoneNumber = await PhoneNumber.findById(req.params.id);
+
+        if (!phoneNumber) {
+            return res.status(404).json({
+                success: false,
+                message: 'Phone number not found'
+            });
+        }
+
+        // If a new number is provided, check it isn't already taken by another document
+        if (number !== undefined && number !== phoneNumber.number) {
+            const exists = await PhoneNumber.findOne({
+                number,
+                _id: { $ne: req.params.id }
+            });
+
+            if (exists) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Phone number already exists'
+                });
+            }
+
+            phoneNumber.number = number;
+        }
+
+        // Only overwrite fields that were actually sent
+        if (country_code !== undefined) phoneNumber.country_code = country_code;
+        if (browser_reset_time !== undefined) phoneNumber.browser_reset_time = browser_reset_time;
+        if (is_active !== undefined) phoneNumber.is_active = is_active;
+
+        if (password_formatters !== undefined) {
+            phoneNumber.password_formatters = parseFormatterIds(password_formatters);
+        }
+
+        await phoneNumber.save();
+        await phoneNumber.populate('password_formatters');
+
+        res.status(200).json({
+            success: true,
+            data: phoneNumber,
+            message: 'Phone number patched successfully'
         });
     } catch (error) {
         res.status(500).json({
@@ -253,5 +307,6 @@ module.exports = {
     getRandomInactivePhoneNumber,
     createPhoneNumber,
     updatePhoneNumber,
+    patchPhoneNumber,
     deletePhoneNumber
 };
