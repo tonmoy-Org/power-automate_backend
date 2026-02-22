@@ -3,26 +3,29 @@ const PhoneCredential = require('../models/PhoneCredential');
 
 const createCredential = async (req, res) => {
     try {
-        const { pa_id, phone, password, type } = req.body;
+        const { country_code, phone, password, type } = req.body;
 
-        const paRecord = await PhoneNumber.findOne({ pa_id });
-        if (!paRecord) {
-            return res.status(404).json({ message: "PA_ID not found" });
+        if (!country_code || !phone) {
+            return res.status(400).json({
+                message: "Country code and phone are required"
+            });
         }
 
+        // Check existing credential only
         const existingCredential = await PhoneCredential.findOne({
-            pa_id: pa_id,
+            country_code: country_code,
             phone: phone
         });
 
         if (existingCredential) {
             return res.status(400).json({
-                message: "Credential with this phone already exists for this PA"
+                message: "Credential with this country code and phone already exists"
             });
         }
 
+        // Create credential directly
         const credential = await PhoneCredential.create({
-            pa_id: pa_id,
+            country_code,
             phone,
             password,
             type: type || 'default'
@@ -34,27 +37,30 @@ const createCredential = async (req, res) => {
         });
 
     } catch (error) {
+
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Duplicate credential: This phone already exists for this PA"
+                message: "Duplicate credential: This country code and phone combination already exists"
             });
         }
-        res.status(500).json({ message: error.message });
+
+        res.status(500).json({
+            message: error.message
+        });
     }
 };
 
 const getCredentials = async (req, res) => {
     try {
-        const { pa_id } = req.query;
-
+        const { country_code, phone } = req.query;
         let filter = {};
 
-        if (pa_id) {
-            const paRecord = await PhoneNumber.findOne({ pa_id });
-            if (!paRecord) {
-                return res.status(404).json({ message: "PA_ID not found" });
-            }
-            filter.pa_id = pa_id;
+        if (country_code) {
+            filter.country_code = country_code;
+        }
+
+        if (phone) {
+            filter.phone = phone;
         }
 
         const credentials = await PhoneCredential
@@ -86,11 +92,39 @@ const getCredentialById = async (req, res) => {
 
 const updateCredential = async (req, res) => {
     try {
-        const { phone, password, type } = req.body;
+        const { country_code, phone, password, type } = req.body;
+
+        if (country_code || phone) {
+            const newCountryCode = country_code || req.body.country_code;
+            const newPhone = phone || req.body.phone;
+
+            const phoneExists = await PhoneNumber.findOne({
+                country_code: newCountryCode,
+                phone: newPhone
+            });
+
+            if (!phoneExists) {
+                return res.status(404).json({
+                    message: "The specified phone number does not exist in the system"
+                });
+            }
+
+            const existingCredential = await PhoneCredential.findOne({
+                country_code: newCountryCode,
+                phone: newPhone,
+                _id: { $ne: req.params.id }
+            });
+
+            if (existingCredential) {
+                return res.status(400).json({
+                    message: "Duplicate credential: This country code and phone combination already exists"
+                });
+            }
+        }
 
         const credential = await PhoneCredential.findByIdAndUpdate(
             req.params.id,
-            { phone, password, type },
+            { country_code, phone, password, type },
             { new: true, runValidators: true }
         );
 
@@ -106,7 +140,7 @@ const updateCredential = async (req, res) => {
     } catch (error) {
         if (error.code === 11000) {
             return res.status(400).json({
-                message: "Duplicate credential: This phone already exists for this PA"
+                message: "Duplicate credential: This country code and phone combination already exists"
             });
         }
         res.status(500).json({ message: error.message });

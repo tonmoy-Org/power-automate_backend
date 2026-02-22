@@ -1,24 +1,36 @@
 const mongoose = require('mongoose');
 
 const phoneCredentialSchema = new mongoose.Schema({
-    pa_id: {
+    country_code: {
         type: String,
         required: true,
     },
+
     phone: {
         type: String,
         required: true,
     },
     type: {
         type: String,
-        required: false,
     },
+
     password: {
-        type: String,
-        required: false
+        type: String
     }
+
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model('PhoneCredential', phoneCredentialSchema);
+
+// Prevent duplicate phone
+phoneCredentialSchema.index(
+    { country_code: 1, phone: 1 },
+    { unique: true }
+);
+
+
+module.exports = mongoose.model(
+    'PhoneCredential',
+    phoneCredentialSchema
+);

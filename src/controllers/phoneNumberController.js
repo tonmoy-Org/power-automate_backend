@@ -1,14 +1,10 @@
 const PhoneNumber = require('../models/PhoneNumber');
-const PhoneCredential = require('../models/PhoneCredential');
 
-// Helper: extract only ObjectId strings from password_formatters,
-// whether the client sends a JSON string, array of objects, or array of ID strings
 const parseFormatterIds = (password_formatters) => {
     if (!password_formatters) return [];
 
     let formatters = password_formatters;
 
-    // If it came in as a JSON string (e.g. from multipart/form-data), parse it first
     if (typeof formatters === 'string') {
         try {
             formatters = JSON.parse(formatters);
@@ -19,7 +15,6 @@ const parseFormatterIds = (password_formatters) => {
 
     if (!Array.isArray(formatters)) return [];
 
-    // Each item may be an ObjectId string or an object with an `id` or `_id` field
     return formatters.map((item) => {
         if (typeof item === 'string') return item;
         if (typeof item === 'object' && item !== null) {
@@ -39,7 +34,6 @@ const getPhoneNumbers = async (req, res) => {
         if (search) {
             query = {
                 $or: [
-                    { pa_id: { $regex: search, $options: 'i' } },
                     { number: { $regex: search, $options: 'i' } },
                     { country_code: { $regex: search, $options: 'i' } }
                 ]
@@ -81,7 +75,6 @@ const getPhoneNumberById = async (req, res) => {
         if (!phoneNumber) {
             return res.status(404).json({
                 success: false,
-                error: 'Not Found',
                 message: 'Phone number not found'
             });
         }
@@ -93,7 +86,6 @@ const getPhoneNumberById = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: 'Server Error',
             message: error.message
         });
     }
@@ -101,22 +93,19 @@ const getPhoneNumberById = async (req, res) => {
 
 const getRandomInactivePhoneNumber = async (req, res) => {
     try {
-        const { id: pa_id } = req.query;
+        const { country_code } = req.query;
 
-        const filter = { is_active: false };
-        if (pa_id) {
-            filter.pa_id = pa_id;
-        }
+        const filter = {
+            is_active: false,
+            ...(country_code && { country_code })
+        };
 
         const count = await PhoneNumber.countDocuments(filter);
 
-        if (count === 0) {
+        if (!count) {
             return res.status(404).json({
                 success: false,
-                error: 'Not Found',
-                message: pa_id
-                    ? `No inactive phone numbers available for pa_id: ${pa_id}`
-                    : 'No inactive phone numbers available'
+                message: "No inactive phone numbers available"
             });
         }
 
@@ -124,7 +113,7 @@ const getRandomInactivePhoneNumber = async (req, res) => {
 
         const phoneNumber = await PhoneNumber.findOne(filter)
             .skip(randomIndex)
-            .populate('password_formatters');
+            .populate("password_formatters");
 
         phoneNumber.is_active = true;
         await phoneNumber.save();
@@ -133,10 +122,10 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             success: true,
             data: phoneNumber
         });
+
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: 'Server Error',
             message: error.message
         });
     }
@@ -146,12 +135,18 @@ const createPhoneNumber = async (req, res) => {
     try {
         const { country_code, number, browser_reset_time, password_formatters } = req.body;
 
+        const exists = await PhoneNumber.findOne({ number });
+
+        if (exists) {
+            return res.status(400).json({
+                success: false,
+                message: 'Phone number already exists'
+            });
+        }
+
         const formatterIds = parseFormatterIds(password_formatters);
 
-        const pa_id = await PhoneNumber.generateNextPaId();
-
         const phoneNumber = await PhoneNumber.create({
-            pa_id,
             country_code,
             number,
             browser_reset_time,
@@ -167,17 +162,8 @@ const createPhoneNumber = async (req, res) => {
             message: 'Phone number created successfully'
         });
     } catch (error) {
-        if (error.code === 11000) {
-            return res.status(400).json({
-                success: false,
-                error: 'Duplicate Error',
-                message: 'Phone number with this PA ID already exists'
-            });
-        }
-
         res.status(500).json({
             success: false,
-            error: 'Server Error',
             message: error.message
         });
     }
@@ -185,7 +171,6 @@ const createPhoneNumber = async (req, res) => {
 
 const updatePhoneNumber = async (req, res) => {
     try {
-        // ✅ is_active is now read from the request body
         const { country_code, number, browser_reset_time, password_formatters, is_active } = req.body;
 
         const formatterIds = parseFormatterIds(password_formatters);
@@ -195,8 +180,19 @@ const updatePhoneNumber = async (req, res) => {
         if (!phoneNumber) {
             return res.status(404).json({
                 success: false,
-                error: 'Not Found',
                 message: 'Phone number not found'
+            });
+        }
+
+        const exists = await PhoneNumber.findOne({
+            number,
+            _id: { $ne: req.params.id }
+        });
+
+        if (exists) {
+            return res.status(400).json({
+                success: false,
+                message: 'Phone number already exists'
             });
         }
 
@@ -205,7 +201,6 @@ const updatePhoneNumber = async (req, res) => {
         phoneNumber.browser_reset_time = browser_reset_time;
         phoneNumber.password_formatters = formatterIds;
 
-        // ✅ Only update is_active if it was explicitly sent in the request
         if (is_active !== undefined) {
             phoneNumber.is_active = is_active;
         }
@@ -222,7 +217,6 @@ const updatePhoneNumber = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: 'Server Error',
             message: error.message
         });
     }
@@ -235,13 +229,9 @@ const deletePhoneNumber = async (req, res) => {
         if (!phoneNumber) {
             return res.status(404).json({
                 success: false,
-                error: 'Not Found',
                 message: 'Phone number not found'
             });
         }
-
-        // Cascade delete: remove all PhoneCredentials linked to this pa_id
-        await PhoneCredential.deleteMany({ pa_id: phoneNumber.pa_id });
 
         await phoneNumber.deleteOne();
 
@@ -252,7 +242,6 @@ const deletePhoneNumber = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: 'Server Error',
             message: error.message
         });
     }
