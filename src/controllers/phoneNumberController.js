@@ -26,8 +26,7 @@ const parseFormatterIds = (password_formatters) => {
 
 const getPhoneNumbers = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '' } = req.query;
-        const skip = (page - 1) * limit;
+        const { search = '' } = req.query;
 
         let query = {};
 
@@ -40,24 +39,16 @@ const getPhoneNumbers = async (req, res) => {
             };
         }
 
-        const total = await PhoneNumber.countDocuments(query);
-
         const phoneNumbers = await PhoneNumber.find(query)
             .populate('password_formatters')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(parseInt(limit));
+            .sort({ createdAt: -1 });
 
         res.status(200).json({
             success: true,
             data: phoneNumbers,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
-            }
+            total: phoneNumbers.length
         });
+
     } catch (error) {
         res.status(500).json({
             success: false,
@@ -96,7 +87,7 @@ const getRandomInactivePhoneNumber = async (req, res) => {
         const { country_code } = req.query;
 
         const filter = {
-            is_active: false,
+            is_active: 'inactive',
             ...(country_code && { country_code })
         };
 
@@ -115,7 +106,7 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             .skip(randomIndex)
             .populate("password_formatters");
 
-        phoneNumber.is_active = true;
+        phoneNumber.is_active = 'running';
         await phoneNumber.save();
 
         res.status(200).json({
@@ -133,7 +124,7 @@ const getRandomInactivePhoneNumber = async (req, res) => {
 
 const createPhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, browser_reset_time, password_formatters } = req.body;
+        const { country_code, number, password_formatters } = req.body;
 
         const exists = await PhoneNumber.findOne({ number });
 
@@ -149,9 +140,8 @@ const createPhoneNumber = async (req, res) => {
         const phoneNumber = await PhoneNumber.create({
             country_code,
             number,
-            browser_reset_time,
             password_formatters: formatterIds,
-            is_active: false
+            is_active: 'inactive'
         });
 
         await phoneNumber.populate('password_formatters');
@@ -169,9 +159,95 @@ const createPhoneNumber = async (req, res) => {
     }
 };
 
+const bulkCreatePhoneNumbers = async (req, res) => {
+    try {
+        const { country_code, numbers, password_formatters } = req.body;
+
+        if (!country_code) {
+            return res.status(400).json({
+                success: false,
+                message: 'Country code is required'
+            });
+        }
+
+        if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one phone number is required'
+            });
+        }
+
+        // Check for duplicates within the request
+        const uniqueNumbers = [...new Set(numbers)];
+        if (uniqueNumbers.length !== numbers.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Duplicate numbers found in the request',
+                duplicates: numbers.filter((num, index) => numbers.indexOf(num) !== index)
+            });
+        }
+
+        // Find existing numbers
+        const existingNumbers = await PhoneNumber.find({
+            number: { $in: numbers }
+        }).select('number');
+
+        const existingNumberSet = new Set(existingNumbers.map(n => n.number));
+
+        if (existingNumberSet.size > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Some phone numbers already exist',
+                existingNumbers: Array.from(existingNumberSet)
+            });
+        }
+
+        const formatterIds = parseFormatterIds(password_formatters);
+
+        // Prepare all phone number documents
+        const phoneNumbersToCreate = numbers.map(number => ({
+            country_code,
+            number,
+            password_formatters: formatterIds,
+            is_active: 'inactive'
+        }));
+
+        // Bulk insert
+        const createdPhoneNumbers = await PhoneNumber.insertMany(phoneNumbersToCreate, { ordered: false });
+
+        // Populate formatters for response
+        const populatedNumbers = await PhoneNumber.find({
+            _id: { $in: createdPhoneNumbers.map(p => p._id) }
+        }).populate('password_formatters');
+
+        res.status(201).json({
+            success: true,
+            data: populatedNumbers,
+            message: `${createdPhoneNumbers.length} phone number(s) created successfully`,
+            count: createdPhoneNumbers.length
+        });
+
+    } catch (error) {
+        // Handle bulk write errors
+        if (error.code === 11000) {
+            // Duplicate key error
+            return res.status(400).json({
+                success: false,
+                message: 'Duplicate phone number detected',
+                error: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 const updatePhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, browser_reset_time, password_formatters, is_active } = req.body;
+        const { country_code, number, password_formatters, is_active } = req.body;
 
         const formatterIds = parseFormatterIds(password_formatters);
 
@@ -198,7 +274,6 @@ const updatePhoneNumber = async (req, res) => {
 
         phoneNumber.country_code = country_code;
         phoneNumber.number = number;
-        phoneNumber.browser_reset_time = browser_reset_time;
         phoneNumber.password_formatters = formatterIds;
 
         if (is_active !== undefined) {
@@ -223,7 +298,7 @@ const updatePhoneNumber = async (req, res) => {
 
 const patchPhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, browser_reset_time, password_formatters, is_active } = req.body;
+        const { country_code, number, password_formatters, is_active } = req.body;
 
         const phoneNumber = await PhoneNumber.findById(req.params.id);
 
@@ -253,7 +328,6 @@ const patchPhoneNumber = async (req, res) => {
 
         // Only overwrite fields that were actually sent
         if (country_code !== undefined) phoneNumber.country_code = country_code;
-        if (browser_reset_time !== undefined) phoneNumber.browser_reset_time = browser_reset_time;
         if (is_active !== undefined) phoneNumber.is_active = is_active;
 
         if (password_formatters !== undefined) {
@@ -301,12 +375,82 @@ const deletePhoneNumber = async (req, res) => {
     }
 };
 
+const bulkDeletePhoneNumbers = async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one ID is required'
+            });
+        }
+
+        const result = await PhoneNumber.deleteMany({
+            _id: { $in: ids }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `${result.deletedCount} phone number(s) deleted successfully`,
+            deletedCount: result.deletedCount
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+
+const bulkUpdatePhoneNumberStatus = async (req, res) => {
+    try {
+        const { ids, is_active } = req.body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one ID is required'
+            });
+        }
+
+        if (!is_active || !['inactive', 'running', 'completed'].includes(is_active)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Valid status is required (inactive, running, completed)'
+            });
+        }
+
+        const result = await PhoneNumber.updateMany(
+            { _id: { $in: ids } },
+            { $set: { is_active } }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `${result.modifiedCount} phone number(s) updated successfully`,
+            modifiedCount: result.modifiedCount
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     getPhoneNumbers,
     getPhoneNumberById,
     getRandomInactivePhoneNumber,
     createPhoneNumber,
+    bulkCreatePhoneNumbers,
     updatePhoneNumber,
     patchPhoneNumber,
-    deletePhoneNumber
+    deletePhoneNumber,
+    bulkDeletePhoneNumbers,
+    bulkUpdatePhoneNumberStatus
 };

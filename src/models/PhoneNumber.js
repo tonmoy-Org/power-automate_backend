@@ -14,12 +14,9 @@ const phoneNumberSchema = new mongoose.Schema(
             trim: true
         },
         is_active: {
-            type: Boolean,
-            default: false
-        },
-        browser_reset_time: {
-            type: Number,
-            required: false
+            type: String,
+            enum: ['completed', 'inactive', 'running'],
+            default: 'inactive'
         },
         password_formatters: [
             {
