@@ -93,20 +93,17 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             });
         }
 
-        // 🔹 Get all inactive numbers for this country
         const cc_items = await PhoneNumber.find({
             country_code,
             is_active: "inactive"
-        });
+        }).populate("password_formatters");
 
         if (cc_items.length > 0) {
 
-            // 🔹 Filter by rdp_id
             const rdp_items = cc_items.filter(
                 item => item.rdp_id === rdp_id
             );
 
-            // ✅ If same rdp exists
             if (rdp_items.length > 0) {
 
                 const selected = rdp_items[0];
@@ -118,13 +115,14 @@ const getRandomInactivePhoneNumber = async (req, res) => {
                     success: true,
                     data: selected
                 });
+            }
 
-            } 
             const in_active_items = cc_items.filter(
                 item => item.rdp_id === null
             );
-            if (in_active_items.length > 0){
-                // ✅ No rdp match → pick random inactive
+
+            if (in_active_items.length > 0) {
+
                 const selected = in_active_items[0];
 
                 selected.is_active = "running";
