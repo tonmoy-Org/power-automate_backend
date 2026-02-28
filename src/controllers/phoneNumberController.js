@@ -93,51 +93,50 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             });
         }
 
-        // 🔹 Get all inactive numbers for this country
-        const cc_items = await PhoneNumber.find({
+        // 1️⃣ First: Check if this rdp_id already has an inactive number
+        const existingRdpNumber = await PhoneNumber.findOne({
             country_code,
+            rdp_id,
             is_active: "inactive"
         });
 
-        if (cc_items.length > 0) {
+        if (existingRdpNumber) {
+            existingRdpNumber.is_active = "running";
+            await existingRdpNumber.save();
 
-            // 🔹 Filter by rdp_id
-            const rdp_items = cc_items.filter(
-                item => item.rdp_id === rdp_id
-            );
-
-            // ✅ If same rdp exists
-            if (rdp_items.length > 0) {
-
-                const selected = rdp_items[0];
-
-                selected.is_active = "running";
-                await selected.save();
-
-                return res.json({
-                    success: true,
-                    data: selected
-                });
-
-            } else {
-                // ✅ No rdp match → pick random inactive
-                const selected = cc_items[0];
-
-                selected.is_active = "running";
-                selected.rdp_id = rdp_id;
-
-                await selected.save();
-
-                return res.json({
-                    success: true,
-                    data: selected
-                });
-            }
+            return res.json({
+                success: true,
+                data: existingRdpNumber
+            });
         }
 
-        return res.status(404).json({
-            success: false,
-            message: "No inactive numbers available"
+        // 2️⃣ Otherwise get an inactive number WITHOUT rdp_id
+        const newNumber = await PhoneNumber.findOne({
+            country_code,
+            is_active: "inactive",
+            $or: [
+                { rdp_id: { $exists: false } },
+                { rdp_id: null },
+                { rdp_id: "" }
+            ]
+        });
+
+        if (!newNumber) {
+            return res.status(404).json({
+                success: false,
+                message: "No inactive numbers available"
+            });
+        }
+
+        // Assign rdp_id only if empty
+        newNumber.rdp_id = rdp_id;
+        newNumber.is_active = "running";
+
+        await newNumber.save();
+
+        return res.json({
+            success: true,
+            data: newNumber
         });
 
     } catch (err) {
@@ -147,7 +146,6 @@ const getRandomInactivePhoneNumber = async (req, res) => {
         });
     }
 };
-
 
 
 const createPhoneNumber = async (req, res) => {
