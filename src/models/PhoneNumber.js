@@ -23,7 +23,11 @@ const phoneNumberSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'PasswordFormatter'
             }
-        ]
+        ],
+        rdp_id: {
+            type: String,
+            default: null
+        }
     },
     {
         timestamps: true

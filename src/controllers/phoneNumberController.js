@@ -84,38 +84,65 @@ const getPhoneNumberById = async (req, res) => {
 
 const getRandomInactivePhoneNumber = async (req, res) => {
     try {
-        const { country_code } = req.query;
+        const { country_code, rdp_id } = req.query;
 
-        const filter = {
-            is_active: 'inactive',
-            ...(country_code && { country_code })
-        };
+        if (!country_code) {
+            return res.status(400).json({
+                success: false,
+                message: "country_code is required"
+            });
+        }
 
-        const count = await PhoneNumber.countDocuments(filter);
+        let phoneNumber = null;
 
-        if (!count) {
+        if (rdp_id) {
+            phoneNumber = await PhoneNumber.findOneAndUpdate(
+                {
+                    country_code,
+                    is_active: "inactive",
+                    rdp_id
+                },
+                {
+                    $set: { is_active: "running" }
+                },
+                {
+                    new: true
+                }
+            ).populate("password_formatters");
+        }
+
+        if (!phoneNumber) {
+            phoneNumber = await PhoneNumber.findOneAndUpdate(
+                {
+                    country_code,
+                    is_active: "inactive"
+                },
+                {
+                    $set: {
+                        is_active: "running",
+                        ...(rdp_id && { rdp_id })
+                    }
+                },
+                {
+                    new: true
+                }
+            ).populate("password_formatters");
+        }
+
+        if (!phoneNumber) {
             return res.status(404).json({
                 success: false,
                 message: "No inactive phone numbers available"
             });
         }
 
-        const randomIndex = Math.floor(Math.random() * count);
-
-        const phoneNumber = await PhoneNumber.findOne(filter)
-            .skip(randomIndex)
-            .populate("password_formatters");
-
-        phoneNumber.is_active = 'running';
-        await phoneNumber.save();
-
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             data: phoneNumber
         });
 
     } catch (error) {
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message
         });
