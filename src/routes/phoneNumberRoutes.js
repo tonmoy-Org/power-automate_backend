@@ -16,7 +16,7 @@ const {
 
 const { protect } = require('../middleware/authMiddleware');
 
-router.get('/inactive/random', protect, getRandomInactivePhoneNumber);
+router.get('/inactive/random', getRandomInactivePhoneNumber);
 
 router.post('/bulk', protect, bulkCreatePhoneNumbers);
 router.delete('/bulk', protect, bulkDeletePhoneNumbers);

@@ -93,86 +93,63 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             });
         }
 
-        // 🔹 STEP 1: Check if ANY number already exists for this rdp_id (random)
-        let existingNumbers = await PhoneNumber.aggregate([
-            {
-                $match: {
-                    country_code: country_code,
-                    rdp_id: rdp_id
-                }
-            },
-            { $sample: { size: 1 } }
-        ]);
-
-        if (existingNumbers.length > 0) {
-            let number = existingNumbers[0];
-
-            // If inactive → make running
-            if (number.is_active === "inactive") {
-                number = await PhoneNumber.findByIdAndUpdate(
-                    number._id,
-                    { $set: { is_active: "running" } },
-                    { new: true }
-                );
-            }
-
-            const populated = await PhoneNumber.populate(
-                number,
-                { path: "password_formatters" }
-            );
-
-            return res.status(200).json({
-                success: true,
-                message: "Existing number returned",
-                data: populated
-            });
-        }
-
-        // 🔹 STEP 2: No number for this rdp_id → pick random inactive
-        let inactiveNumbers = await PhoneNumber.aggregate([
-            {
-                $match: {
-                    country_code: country_code,
-                    is_active: "inactive"
-                }
-            },
-            { $sample: { size: 1 } }
-        ]);
-
-        if (inactiveNumbers.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No inactive phone numbers available"
-            });
-        }
-
-        const selected = inactiveNumbers[0];
-
-        // 🔹 STEP 3: Assign it
-        const updatedNumber = await PhoneNumber.findByIdAndUpdate(
-            selected._id,
-            {
-                $set: {
-                    is_active: "running",
-                    rdp_id: rdp_id
-                }
-            },
-            { new: true }
-        ).populate("password_formatters");
-
-        return res.status(200).json({
-            success: true,
-            message: "Random inactive number assigned",
-            data: updatedNumber
+        // 🔹 Get all inactive numbers for this country
+        const cc_items = await PhoneNumber.find({
+            country_code,
+            is_active: "inactive"
         });
 
-    } catch (error) {
+        if (cc_items.length > 0) {
+
+            // 🔹 Filter by rdp_id
+            const rdp_items = cc_items.filter(
+                item => item.rdp_id === rdp_id
+            );
+
+            // ✅ If same rdp exists
+            if (rdp_items.length > 0) {
+
+                const selected = rdp_items[0];
+
+                selected.is_active = "running";
+                await selected.save();
+
+                return res.json({
+                    success: true,
+                    data: selected
+                });
+
+            } else {
+                // ✅ No rdp match → pick random inactive
+                const selected = cc_items[0];
+
+                selected.is_active = "running";
+                selected.rdp_id = rdp_id;
+
+                await selected.save();
+
+                return res.json({
+                    success: true,
+                    data: selected
+                });
+            }
+        }
+
+        return res.status(404).json({
+            success: false,
+            message: "No inactive numbers available"
+        });
+
+    } catch (err) {
         return res.status(500).json({
             success: false,
-            message: error.message
+            message: err.message
         });
     }
 };
+
+
+
 const createPhoneNumber = async (req, res) => {
     try {
         const { country_code, number, password_formatters } = req.body;
