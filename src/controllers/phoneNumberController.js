@@ -93,50 +93,55 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             });
         }
 
-        // 1️⃣ First: Check if this rdp_id already has an inactive number
-        const existingRdpNumber = await PhoneNumber.findOne({
+        // 🔹 Get all inactive numbers for this country
+        const cc_items = await PhoneNumber.find({
             country_code,
-            rdp_id,
             is_active: "inactive"
         });
 
-        if (existingRdpNumber) {
-            existingRdpNumber.is_active = "running";
-            await existingRdpNumber.save();
+        if (cc_items.length > 0) {
 
-            return res.json({
-                success: true,
-                data: existingRdpNumber
-            });
+            // 🔹 Filter by rdp_id
+            const rdp_items = cc_items.filter(
+                item => item.rdp_id === rdp_id
+            );
+
+            // ✅ If same rdp exists
+            if (rdp_items.length > 0) {
+
+                const selected = rdp_items[0];
+
+                selected.is_active = "running";
+                await selected.save();
+
+                return res.json({
+                    success: true,
+                    data: selected
+                });
+
+            } 
+            const in_active_items = cc_items.filter(
+                item => item.rdp_id === null
+            );
+            if (in_active_items.length > 0){
+                // ✅ No rdp match → pick random inactive
+                const selected = in_active_items[0];
+
+                selected.is_active = "running";
+                selected.rdp_id = rdp_id;
+
+                await selected.save();
+
+                return res.json({
+                    success: true,
+                    data: selected
+                });
+            }
         }
 
-        // 2️⃣ Otherwise get an inactive number WITHOUT rdp_id
-        const newNumber = await PhoneNumber.findOne({
-            country_code,
-            is_active: "inactive",
-            $or: [
-                { rdp_id: { $exists: false } },
-                { rdp_id: null },
-                { rdp_id: "" }
-            ]
-        });
-
-        if (!newNumber) {
-            return res.status(404).json({
-                success: false,
-                message: "No inactive numbers available"
-            });
-        }
-
-        // Assign rdp_id only if empty
-        newNumber.rdp_id = rdp_id;
-        newNumber.is_active = "running";
-
-        await newNumber.save();
-
-        return res.json({
-            success: true,
-            data: newNumber
+        return res.status(404).json({
+            success: false,
+            message: "No inactive numbers available"
         });
 
     } catch (err) {
