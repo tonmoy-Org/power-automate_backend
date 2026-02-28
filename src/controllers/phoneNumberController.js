@@ -93,32 +93,42 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             });
         }
 
-        // 🔹 STEP 1: Check if already assigned to this rdp_id (RANDOM)
+        // 🔹 STEP 1: Check if ANY number already exists for this rdp_id (random)
         let existingNumbers = await PhoneNumber.aggregate([
             {
                 $match: {
                     country_code: country_code,
-                    rdp_id: rdp_id,
-                    is_active: "running"
+                    rdp_id: rdp_id
                 }
             },
             { $sample: { size: 1 } }
         ]);
 
         if (existingNumbers.length > 0) {
+            let number = existingNumbers[0];
+
+            // If inactive → make running
+            if (number.is_active === "inactive") {
+                number = await PhoneNumber.findByIdAndUpdate(
+                    number._id,
+                    { $set: { is_active: "running" } },
+                    { new: true }
+                );
+            }
+
             const populated = await PhoneNumber.populate(
-                existingNumbers,
+                number,
                 { path: "password_formatters" }
             );
 
             return res.status(200).json({
                 success: true,
-                message: "Random existing number returned",
-                data: populated[0]
+                message: "Existing number returned",
+                data: populated
             });
         }
 
-        // 🔹 STEP 2: Pick random inactive number
+        // 🔹 STEP 2: No number for this rdp_id → pick random inactive
         let inactiveNumbers = await PhoneNumber.aggregate([
             {
                 $match: {
@@ -136,11 +146,11 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             });
         }
 
-        const selectedNumber = inactiveNumbers[0];
+        const selected = inactiveNumbers[0];
 
-        // 🔹 STEP 3: Update selected number
+        // 🔹 STEP 3: Assign it
         const updatedNumber = await PhoneNumber.findByIdAndUpdate(
-            selectedNumber._id,
+            selected._id,
             {
                 $set: {
                     is_active: "running",
