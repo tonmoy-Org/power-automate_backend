@@ -86,53 +86,32 @@ const getRandomInactivePhoneNumber = async (req, res) => {
     try {
         const { country_code, rdp_id } = req.query;
 
-        if (!country_code) {
+        // ✅ Both are required
+        if (!country_code || !rdp_id) {
             return res.status(400).json({
                 success: false,
-                message: "country_code is required"
+                message: "country_code and rdp_id are required"
             });
         }
 
-        let phoneNumber = null;
-
-        if (rdp_id) {
-            phoneNumber = await PhoneNumber.findOneAndUpdate(
-                {
-                    country_code,
-                    is_active: "inactive",
-                    rdp_id
-                },
-                {
-                    $set: { is_active: "running" }
-                },
-                {
-                    new: true
-                }
-            ).populate("password_formatters");
-        }
-
-        if (!phoneNumber) {
-            phoneNumber = await PhoneNumber.findOneAndUpdate(
-                {
-                    country_code,
-                    is_active: "inactive"
-                },
-                {
-                    $set: {
-                        is_active: "running",
-                        ...(rdp_id && { rdp_id })
-                    }
-                },
-                {
-                    new: true
-                }
-            ).populate("password_formatters");
-        }
+        const phoneNumber = await PhoneNumber.findOneAndUpdate(
+            {
+                country_code,
+                is_active: "inactive",
+                rdp_id
+            },
+            {
+                $set: { is_active: "running" }
+            },
+            {
+                new: true
+            }
+        ).populate("password_formatters");
 
         if (!phoneNumber) {
             return res.status(404).json({
                 success: false,
-                message: "No inactive phone numbers available"
+                message: "No inactive phone number found"
             });
         }
 
