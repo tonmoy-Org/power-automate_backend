@@ -3,7 +3,7 @@ const PhoneCredential = require("../models/PhoneCredential");
 
 const createCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type, url } = req.body;
+    const { country_code, phone, password, type } = req.body;
 
     if (!country_code || !phone) {
       return res.status(400).json({
@@ -27,7 +27,6 @@ const createCredential = async (req, res) => {
       phone,
       password,
       type: type || "default",
-      url,
     });
 
     res.status(201).json({
@@ -82,7 +81,7 @@ const getCredentialById = async (req, res) => {
 
 const updateCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type, url } = req.body;
+    const { country_code, phone, password, type } = req.body;
 
     if (country_code || phone) {
       const newCountryCode = country_code || req.body.country_code;
@@ -115,7 +114,7 @@ const updateCredential = async (req, res) => {
 
     const credential = await PhoneCredential.findByIdAndUpdate(
       req.params.id,
-      { country_code, phone, password, type, url },
+      { country_code, phone, password, type },
       { new: true, runValidators: true },
     );
 
