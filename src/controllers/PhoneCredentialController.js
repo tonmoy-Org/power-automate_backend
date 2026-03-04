@@ -3,7 +3,7 @@ const PhoneCredential = require("../models/PhoneCredential");
 
 const createCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type } = req.body;
+    const { country_code, phone, password, type, url } = req.body;
 
     if (!country_code || !phone) {
       return res.status(400).json({
@@ -11,10 +11,9 @@ const createCredential = async (req, res) => {
       });
     }
 
-    // Check existing credential only
     const existingCredential = await PhoneCredential.findOne({
-      country_code: country_code,
-      phone: phone,
+      country_code,
+      phone,
     });
 
     if (existingCredential) {
@@ -23,12 +22,12 @@ const createCredential = async (req, res) => {
       });
     }
 
-    // Create credential directly
     const credential = await PhoneCredential.create({
       country_code,
       phone,
       password,
       type: type || "default",
+      url,
     });
 
     res.status(201).json({
@@ -54,13 +53,8 @@ const getCredentials = async (req, res) => {
     const { country_code, phone } = req.query;
     let filter = {};
 
-    if (country_code) {
-      filter.country_code = country_code;
-    }
-
-    if (phone) {
-      filter.phone = phone;
-    }
+    if (country_code) filter.country_code = country_code;
+    if (phone) filter.phone = phone;
 
     const credentials = await PhoneCredential.find(filter).sort({
       createdAt: -1,
@@ -88,7 +82,7 @@ const getCredentialById = async (req, res) => {
 
 const updateCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type } = req.body;
+    const { country_code, phone, password, type, url } = req.body;
 
     if (country_code || phone) {
       const newCountryCode = country_code || req.body.country_code;
@@ -121,7 +115,7 @@ const updateCredential = async (req, res) => {
 
     const credential = await PhoneCredential.findByIdAndUpdate(
       req.params.id,
-      { country_code, phone, password, type },
+      { country_code, phone, password, type, url },
       { new: true, runValidators: true },
     );
 
@@ -158,7 +152,6 @@ const deleteCredential = async (req, res) => {
   }
 };
 
-// Add this new function to your controller for bulk delete
 const bulkDeleteCredentials = async (req, res) => {
   try {
     const { ids } = req.body;
@@ -169,7 +162,6 @@ const bulkDeleteCredentials = async (req, res) => {
       });
     }
 
-    // Single database operation for all deletes - MUCH faster than individual deletes
     const result = await PhoneCredential.deleteMany({
       _id: { $in: ids },
     });
@@ -189,7 +181,36 @@ const bulkDeleteCredentials = async (req, res) => {
   }
 };
 
-// Don't forget to export it
+const deleteCredentialsByTypeAndCountry = async (req, res) => {
+  try {
+    const { type, countryCode } = req.body;
+
+    if (!type || !countryCode) {
+      return res.status(400).json({
+        message: "Type and countryCode are required",
+      });
+    }
+
+    const result = await PhoneCredential.deleteMany({
+      type: type,
+      country_code: countryCode,
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({
+        message: `No Type ${type} credentials found for Country Code ${countryCode}`,
+      });
+    }
+
+    res.json({
+      message: `Successfully deleted ${result.deletedCount} Type ${type} credential(s) for Country Code ${countryCode}`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createCredential,
   getCredentials,
@@ -197,4 +218,5 @@ module.exports = {
   updateCredential,
   deleteCredential,
   bulkDeleteCredentials,
+  deleteCredentialsByTypeAndCountry,
 };

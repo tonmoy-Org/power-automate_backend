@@ -4,8 +4,8 @@ const controller = require('../controllers/PhoneCredentialController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.delete('/bulk', protect, controller.bulkDeleteCredentials);
+router.delete('/by-type', protect, controller.deleteCredentialsByTypeAndCountry);
 
-// Routes
 router.route('/')
     .get(protect, controller.getCredentials)
     .post(protect, controller.createCredential);
@@ -15,6 +15,5 @@ router.route('/:id')
     .put(protect, controller.updateCredential)
     .patch(protect, controller.updateCredential)
     .delete(protect, controller.deleteCredential);
-
 
 module.exports = router;
