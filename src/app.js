@@ -13,6 +13,7 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'https://power-automate-fontend.vercel.app',
+  'https://power-automate-pa-1.vercel.app'
 ];
 
 app.use(
