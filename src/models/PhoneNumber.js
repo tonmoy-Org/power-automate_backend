@@ -27,6 +27,10 @@ const phoneNumberSchema = new mongoose.Schema(
         rdp_id: {
             type: String,
             default: null
+        },
+        limit: {
+            type: Number,
+            default: 0,
         }
     },
     {

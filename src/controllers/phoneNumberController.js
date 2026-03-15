@@ -153,7 +153,7 @@ const getRandomInactivePhoneNumber = async (req, res) => {
 
 const createPhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, password_formatters } = req.body;
+        const { country_code, number, password_formatters, limit } = req.body;
 
         const exists = await PhoneNumber.findOne({ number });
 
@@ -170,7 +170,8 @@ const createPhoneNumber = async (req, res) => {
             country_code,
             number,
             password_formatters: formatterIds,
-            is_active: 'inactive'
+            is_active: 'inactive',
+            limit: limit || null
         });
 
         await phoneNumber.populate('password_formatters');
@@ -190,7 +191,7 @@ const createPhoneNumber = async (req, res) => {
 
 const bulkCreatePhoneNumbers = async (req, res) => {
     try {
-        const { country_code, numbers, password_formatters } = req.body;
+        const { country_code, numbers, password_formatters, limit } = req.body;
 
         if (!country_code) {
             return res.status(400).json({
@@ -238,7 +239,8 @@ const bulkCreatePhoneNumbers = async (req, res) => {
             country_code,
             number,
             password_formatters: formatterIds,
-            is_active: 'inactive'
+            is_active: 'inactive',
+            limit: limit || null
         }));
 
         // Bulk insert
@@ -276,7 +278,7 @@ const bulkCreatePhoneNumbers = async (req, res) => {
 
 const updatePhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, password_formatters, is_active } = req.body;
+        const { country_code, number, password_formatters, is_active, limit } = req.body;
 
         const formatterIds = parseFormatterIds(password_formatters);
 
@@ -309,6 +311,10 @@ const updatePhoneNumber = async (req, res) => {
             phoneNumber.is_active = is_active;
         }
 
+        if (limit !== undefined) {
+            phoneNumber.limit = limit;
+        }
+
         await phoneNumber.save();
         await phoneNumber.populate('password_formatters');
 
@@ -327,7 +333,7 @@ const updatePhoneNumber = async (req, res) => {
 
 const patchPhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, password_formatters, is_active } = req.body;
+        const { country_code, number, password_formatters, is_active, limit } = req.body;
 
         const phoneNumber = await PhoneNumber.findById(req.params.id);
 
@@ -358,6 +364,7 @@ const patchPhoneNumber = async (req, res) => {
         // Only overwrite fields that were actually sent
         if (country_code !== undefined) phoneNumber.country_code = country_code;
         if (is_active !== undefined) phoneNumber.is_active = is_active;
+        if (limit !== undefined) phoneNumber.limit = limit;
 
         if (password_formatters !== undefined) {
             phoneNumber.password_formatters = parseFormatterIds(password_formatters);

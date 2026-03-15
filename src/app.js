@@ -7,6 +7,10 @@ const phoneNumberRoutes = require('./routes/phoneNumberRoutes');
 const passwordFormatterRoutes = require('./routes/passwordFormatterRoutes');
 const phoneCredentialRoutes = require('./routes/phoneCredentialRoutes');
 const setupSwagger = require('./config/swagger');
+const { startPhoneNumberMonitor } = require('./services/phoneNumberMonitor');
+
+
+startPhoneNumberMonitor(10, 60)
 
 const app = express();
 
