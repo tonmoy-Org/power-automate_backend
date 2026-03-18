@@ -18,7 +18,8 @@ const allowedOrigins = [
   'http://localhost:5173',
   'https://power-automate-fontend.vercel.app',
   'https://power-automate-pa-1.vercel.app',
-  "http://ec2-100-54-233-67.compute-1.amazonaws.com"
+  "http://ec2-100-54-233-67.compute-1.amazonaws.com",
+  "http://23.95.140.149"
 ];
 
 app.use(
