@@ -34,7 +34,8 @@ const getPhoneNumbers = async (req, res) => {
             query = {
                 $or: [
                     { number: { $regex: search, $options: 'i' } },
-                    { country_code: { $regex: search, $options: 'i' } }
+                    { country_code: { $regex: search, $options: 'i' } },
+                    { rdp_id: { $regex: search, $options: 'i' } }
                 ]
             };
         }
@@ -278,7 +279,7 @@ const bulkCreatePhoneNumbers = async (req, res) => {
 
 const updatePhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, password_formatters, is_active, limit } = req.body;
+        const { country_code, number, password_formatters, is_active, limit, rdp_id } = req.body;
 
         const formatterIds = parseFormatterIds(password_formatters);
 
@@ -291,16 +292,19 @@ const updatePhoneNumber = async (req, res) => {
             });
         }
 
-        const exists = await PhoneNumber.findOne({
-            number,
-            _id: { $ne: req.params.id }
-        });
-
-        if (exists) {
-            return res.status(400).json({
-                success: false,
-                message: 'Phone number already exists'
+        // Check if the new number already exists (but not on this document)
+        if (number !== undefined && number !== phoneNumber.number) {
+            const exists = await PhoneNumber.findOne({
+                number,
+                _id: { $ne: req.params.id }
             });
+
+            if (exists) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Phone number already exists'
+                });
+            }
         }
 
         phoneNumber.country_code = country_code;
@@ -313,6 +317,11 @@ const updatePhoneNumber = async (req, res) => {
 
         if (limit !== undefined) {
             phoneNumber.limit = limit;
+        }
+
+        // Handle RDP ID - set to null if empty string or undefined
+        if (rdp_id !== undefined) {
+            phoneNumber.rdp_id = rdp_id ? rdp_id.trim() : null;
         }
 
         await phoneNumber.save();
@@ -333,7 +342,7 @@ const updatePhoneNumber = async (req, res) => {
 
 const patchPhoneNumber = async (req, res) => {
     try {
-        const { country_code, number, password_formatters, is_active, limit } = req.body;
+        const { country_code, number, password_formatters, is_active, limit, rdp_id } = req.body;
 
         const phoneNumber = await PhoneNumber.findById(req.params.id);
 
@@ -368,6 +377,11 @@ const patchPhoneNumber = async (req, res) => {
 
         if (password_formatters !== undefined) {
             phoneNumber.password_formatters = parseFormatterIds(password_formatters);
+        }
+
+        // Handle RDP ID - set to null if empty string, or trim if provided
+        if (rdp_id !== undefined) {
+            phoneNumber.rdp_id = rdp_id ? rdp_id.trim() : null;
         }
 
         await phoneNumber.save();
