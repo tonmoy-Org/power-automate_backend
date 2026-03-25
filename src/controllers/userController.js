@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
+const bcrypt = require('bcrypt');
 
 const getAllUsers = async (req, res) => {
     try {
@@ -98,10 +99,12 @@ const createUser = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Only superadmin can create superadmin users' });
         }
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const user = new User({
             name,
             email,
-            password,
+            password: hashedPassword,
             role: role || 'member',
             isActive: isActive !== undefined ? isActive : true,
         });
@@ -113,7 +116,11 @@ const createUser = async (req, res) => {
         delete userResponse.resetPasswordToken;
         delete userResponse.resetPasswordExpire;
 
-        res.status(201).json({ success: true, message: 'User created successfully', data: userResponse });
+        res.status(201).json({
+            success: true,
+            message: 'User created successfully',
+            data: userResponse
+        });
 
     } catch (error) {
         console.error(error);
