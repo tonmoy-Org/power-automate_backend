@@ -14,8 +14,8 @@ const options = {
         description: 'Development server',
       },
       {
-        url: 'https://power-automate-fontend-vtln.vercel.app',
-        description: 'Production server',
+        url: 'http://23.95.140.149:5000',
+        description: 'VPS Production server',
       },
     ],
     components: {
