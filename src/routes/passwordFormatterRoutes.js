@@ -6,11 +6,14 @@ const {
     createPasswordFormatter,
     updatePasswordFormatter,
     deletePasswordFormatter,
-    getPasswordFormattersList
+    getPasswordFormattersList,
+    bulkDeletePasswordFormatters
 } = require('../controllers/passwordFormatterController');
 const { protect } = require('../middleware/authMiddleware');
 
 // Routes
+router.route('/bulk')
+    .delete(protect, bulkDeletePasswordFormatters);
 router.route('/')
     .get(protect, getPasswordFormatters)
     .post(protect, createPasswordFormatter);

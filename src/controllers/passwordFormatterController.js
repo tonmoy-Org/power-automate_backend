@@ -213,11 +213,50 @@ const getPasswordFormattersList = async (req, res) => {
     }
 };
 
+const bulkDeletePasswordFormatters = async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one ID is required'
+            });
+        }
+
+        const PhoneNumber = mongoose.model('PhoneNumber');
+
+        // 1. Remove these formatter IDs from all PhoneNumbers first
+        // This mirrors the behavior of the single delete hook but in bulk
+        await PhoneNumber.updateMany(
+            { password_formatters: { $in: ids } },
+            { $pull: { password_formatters: { $in: ids } } }
+        );
+
+        // 2. Perform the bulk delete
+        const result = await PasswordFormatter.deleteMany({
+            _id: { $in: ids }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `${result.deletedCount} password formatter(s) deleted successfully`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server Error',
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     getPasswordFormatters,
     getPasswordFormatterById,
     createPasswordFormatter,
     updatePasswordFormatter,
     deletePasswordFormatter,
-    getPasswordFormattersList
+    getPasswordFormattersList,
+    bulkDeletePasswordFormatters
 };
