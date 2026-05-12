@@ -114,6 +114,41 @@ const createPasswordFormatter = async (req, res) => {
     }
 };
 
+const bulkCreatePasswordFormatters = async (req, res) => {
+    try {
+        const { items } = req.body;
+
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one item is required'
+            });
+        }
+
+        const docs = items.map(({ start_add, start_index, end_index, end_add, country_code }) => ({
+            ...(start_add !== undefined && { start_add }),
+            ...(start_index !== undefined && { start_index }),
+            ...(end_index !== undefined && { end_index }),
+            ...(end_add !== undefined && { end_add }),
+            ...(country_code !== undefined && { country_code }),
+        }));
+
+        const created = await PasswordFormatter.insertMany(docs, { ordered: false });
+
+        res.status(201).json({
+            success: true,
+            data: created,
+            message: `${created.length} password formatter(s) created successfully`
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: 'Server Error',
+            message: error.message
+        });
+    }
+};
+
 const updatePasswordFormatter = async (req, res) => {
     try {
         const { start_add, start_index, end_index, end_add } = req.body;
@@ -255,6 +290,7 @@ module.exports = {
     getPasswordFormatters,
     getPasswordFormatterById,
     createPasswordFormatter,
+    bulkCreatePasswordFormatters,
     updatePasswordFormatter,
     deletePasswordFormatter,
     getPasswordFormattersList,

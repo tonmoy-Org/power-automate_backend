@@ -7,13 +7,16 @@ const {
     updatePasswordFormatter,
     deletePasswordFormatter,
     getPasswordFormattersList,
-    bulkDeletePasswordFormatters
+    bulkDeletePasswordFormatters,
+    bulkCreatePasswordFormatters
 } = require('../controllers/passwordFormatterController');
 const { protect } = require('../middleware/authMiddleware');
 
 // Routes
 router.route('/bulk')
+    .post(protect, bulkCreatePasswordFormatters)
     .delete(protect, bulkDeletePasswordFormatters);
+
 router.route('/')
     .get(protect, getPasswordFormatters)
     .post(protect, createPasswordFormatter);
