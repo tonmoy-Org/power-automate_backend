@@ -6,6 +6,7 @@ const userRoutes = require('./routes/userRoutes');
 const phoneNumberRoutes = require('./routes/phoneNumberRoutes');
 const passwordFormatterRoutes = require('./routes/passwordFormatterRoutes');
 const phoneCredentialRoutes = require('./routes/phoneCredentialRoutes');
+const machineRoutes = require('./routes/machineRoutes');
 const setupSwagger = require('./config/swagger');
 const { startPhoneNumberMonitor } = require('./services/phoneNumberMonitor');
 
@@ -47,6 +48,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/phone-numbers', phoneNumberRoutes);
 app.use('/api/password-formatters', passwordFormatterRoutes);
 app.use('/api/phone-credentials', phoneCredentialRoutes);
+app.use('/api/machines', machineRoutes);
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({ success: true, message: 'Server is running' });
