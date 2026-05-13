@@ -31,6 +31,40 @@ exports.updateStatus = async (req, res) => {
   }
 };
 
+// Update specific task progress
+exports.updateTaskProgress = async (req, res) => {
+  try {
+    const { machineId, taskIndex, progress, status, name } = req.body;
+
+    const update = {
+      lastSeen: new Date(),
+    };
+    
+    if (status) update.status = status;
+    if (name) update.name = name;
+    
+    const taskKey = `tasks.${taskIndex}`;
+    update[taskKey] = progress;
+
+    const machine = await Machine.findOneAndUpdate(
+      { machineId },
+      { $set: update },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: machine,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message,
+    });
+  }
+};
+
 // Get all machines
 exports.getMachines = async (req, res) => {
   try {
