@@ -20,8 +20,8 @@ const machineSchema = new mongoose.Schema({
     default: Date.now,
   },
   tasks: {
-    type: [Number], // Progress percentages for 10 tasks/browsers
-    default: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    type: [mongoose.Schema.Types.Mixed], // Array of objects like { progress: 0, left: 0 }
+    default: Array(10).fill({ progress: 0, left: 0 }),
   },
   mode: {
     type: String,

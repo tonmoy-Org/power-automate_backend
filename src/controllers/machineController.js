@@ -1,5 +1,36 @@
 const Machine = require('../models/Machine');
 
+// Get machine by machineId
+exports.getMachineByMachineId = async (req, res) => {
+  try {
+    const machine = await Machine.findOne({ machineId: req.params.machineId });
+    if (!machine) {
+      return res.status(404).json({ success: false, message: 'Machine not found' });
+    }
+    res.status(200).json({ success: true, data: machine });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error', error: error.message });
+  }
+};
+
+// Update machine mode
+exports.updateMode = async (req, res) => {
+  try {
+    const { mode } = req.body;
+    const machine = await Machine.findByIdAndUpdate(
+      req.params.id,
+      { mode },
+      { new: true }
+    );
+    if (!machine) {
+      return res.status(404).json({ success: false, message: 'Machine not found' });
+    }
+    res.status(200).json({ success: true, data: machine });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
 // Update or create machine status (Heartbeat)
 exports.updateStatus = async (req, res) => {
   try {
@@ -34,7 +65,7 @@ exports.updateStatus = async (req, res) => {
 // Update specific task progress
 exports.updateTaskProgress = async (req, res) => {
   try {
-    const { machineId, taskIndex, progress, status, name } = req.body;
+    const { machineId, taskIndex, progress, left, status, name } = req.body;
 
     const update = {
       lastSeen: new Date(),
@@ -44,7 +75,7 @@ exports.updateTaskProgress = async (req, res) => {
     if (name) update.name = name;
     
     const taskKey = `tasks.${taskIndex}`;
-    update[taskKey] = progress;
+    update[taskKey] = { progress, left: left || 0 };
 
     const machine = await Machine.findOneAndUpdate(
       { machineId },
