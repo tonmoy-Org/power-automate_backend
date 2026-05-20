@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 
 const seed = async () => {
-    await mongoose.connect('mongodb://admin:powerautomate@23.95.140.149:27017/admin');
+    await mongoose.connect('mongodb://localhost:27017/financeDB');
 
     const users = [
         { name: 'Super Admin', email: 'admin@gmail.com', password: 'admin', role: 'superadmin', isActive: true },

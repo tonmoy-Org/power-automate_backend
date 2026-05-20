@@ -3,7 +3,16 @@ const PhoneCredential = require("../models/PhoneCredential");
 
 const createCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type } = req.body;
+const { country_code, phone, password, type, operator, circle } = req.body;
+
+    // Validate operator and circle for Indian numbers (country_code 91)
+    if (String(country_code) === "91") {
+      if (!operator || !circle) {
+        return res.status(400).json({
+          message: "Operator and circle are required for Indian numbers",
+        });
+      }
+    }
 
     if (!country_code || !phone) {
       return res.status(400).json({

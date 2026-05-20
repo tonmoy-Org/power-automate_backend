@@ -15,6 +15,14 @@ const phoneCredentialSchema = new mongoose.Schema({
     },
 
     password: {
+        type: String,
+    },
+
+    operator: {
+        type: String
+    },
+
+    circle: {
         type: String
     }
 
