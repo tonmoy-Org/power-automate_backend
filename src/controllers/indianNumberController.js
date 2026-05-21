@@ -85,7 +85,7 @@ const getIndianNumberById = async (req, res) => {
 
 const getRandomInactiveIndianNumber = async (req, res) => {
     try {
-        const { operator, circle, rdp_id } = req.query;
+        const { country_code, operator, circle, rdp_id } = req.query;
         // rdp_id is required
         if (!rdp_id) {
             return res.status(400).json({
@@ -93,19 +93,17 @@ const getRandomInactiveIndianNumber = async (req, res) => {
                 message: "rdp_id is required"
             });
         }
-        // operator is required (can be single or multiple)
-        if (!operator) {
-            return res.status(400).json({
-                success: false,
-                message: "operator is required"
-            });
-        }
-        // Build query allowing multiple operators and optional circles
-        const operatorList = Array.isArray(operator) ? operator : [operator];
+        // Build query allowing optional operators, circles and country_code
         const query = {
-            operator: { $in: operatorList },
             is_active: "inactive"
         };
+        if (country_code) {
+            query.country_code = country_code;
+        }
+        if (operator) {
+            const operatorList = Array.isArray(operator) ? operator : [operator];
+            query.operator = { $in: operatorList };
+        }
         if (circle) {
             const circleList = Array.isArray(circle) ? circle : [circle];
             query.circle = { $in: circleList };
