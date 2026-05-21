@@ -3,16 +3,7 @@ const PhoneCredential = require("../models/PhoneCredential");
 
 const createCredential = async (req, res) => {
   try {
-const { country_code, phone, password, type, operator, circle } = req.body;
-
-    // Validate operator and circle for Indian numbers (country_code 91)
-    if (String(country_code) === "91") {
-      if (!operator || !circle) {
-        return res.status(400).json({
-          message: "Operator and circle are required for Indian numbers",
-        });
-      }
-    }
+    const { country_code, phone, password, type, operator, circle } = req.body;
 
     if (!country_code || !phone) {
       return res.status(400).json({
@@ -20,36 +11,26 @@ const { country_code, phone, password, type, operator, circle } = req.body;
       });
     }
 
-    const existingCredential = await PhoneCredential.findOne({
-      country_code,
-      phone,
-    });
-
-    if (existingCredential) {
-      return res.status(400).json({
-        message: "Credential with this country code and phone already exists",
-      });
-    }
-
-    const credential = await PhoneCredential.create({
+    const updateData = {
       country_code,
       phone,
       password,
       type: type || "default",
-    });
+    };
+    if (operator) updateData.operator = operator;
+    if (circle) updateData.circle = circle;
+
+    const credential = await PhoneCredential.findOneAndUpdate(
+      { country_code, phone },
+      { $set: updateData },
+      { new: true, upsert: true }
+    );
 
     res.status(201).json({
-      message: "Credential created successfully",
+      message: "Credential saved successfully",
       data: credential,
     });
   } catch (error) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        message:
-          "Duplicate credential: This country code and phone combination already exists",
-      });
-    }
-
     res.status(500).json({
       message: error.message,
     });
