@@ -85,6 +85,33 @@ const getIndianNumberById = async (req, res) => {
     }
 };
 
+const parseQueryList = (val) => {
+    if (!val) return [];
+    if (Array.isArray(val)) return val.map(x => String(x).trim()).filter(Boolean);
+    
+    const strVal = String(val).trim();
+    if (!strVal || strVal === 'None' || strVal === 'undefined' || strVal === '[]') return [];
+    
+    if (strVal.startsWith('[') && strVal.endsWith(']')) {
+        try {
+            const sanitized = strVal.replace(/'/g, '"');
+            const parsed = JSON.parse(sanitized);
+            if (Array.isArray(parsed)) {
+                return parsed.map(x => String(x).trim()).filter(Boolean);
+            }
+        } catch (e) {
+            const stripped = strVal.slice(1, -1);
+            return stripped.split(',')
+                .map(x => x.replace(/['"]/g, '').trim())
+                .filter(Boolean);
+        }
+    }
+    
+    return strVal.split(',')
+        .map(x => x.replace(/['"]/g, '').trim())
+        .filter(Boolean);
+};
+
 const getRandomInactiveIndianNumber = async (req, res) => {
     try {
         const { country_code, operator, circle, rdp_id } = req.query;
@@ -102,14 +129,17 @@ const getRandomInactiveIndianNumber = async (req, res) => {
         if (country_code) {
             query.country_code = country_code;
         }
-        if (operator && operator !== 'None' && operator !== 'undefined' && operator !== '') {
-            const operatorList = Array.isArray(operator) ? operator : [operator];
+        
+        const operatorList = parseQueryList(operator);
+        if (operatorList.length > 0) {
             query.operator = { $in: operatorList };
         }
-        if (circle && circle !== 'None' && circle !== 'undefined' && circle !== '') {
-            const circleList = Array.isArray(circle) ? circle : [circle];
+        
+        const circleList = parseQueryList(circle);
+        if (circleList.length > 0) {
             query.circle = { $in: circleList };
         }
+        
         const cc_items = await IndianNumber.find(query).populate("password_formatters");
         if (cc_items.length > 0) {
             // Prefer numbers that already have this rdp_id assigned
