@@ -1,4 +1,5 @@
 const PhoneNumber = require('../models/PhoneNumber');
+const IndianNumber = require('../models/IndianNumber');
 
 const runScan = async (watchMinutes) => {
     try {
@@ -6,6 +7,7 @@ const runScan = async (watchMinutes) => {
         const now = Date.now();
         const watchWindow = watchMinutes * 60 * 1000; // minutes → ms
 
+        // --- Global PhoneNumbers ---
         const records = await PhoneNumber.find({
             is_active: "running"
         }).select("_id updatedAt is_active");
@@ -45,7 +47,34 @@ Difference : ${diffSeconds}s (${diffMinutes} min)
         }
 
         console.log(
-            `[PhoneMonitor] Scan done — ${resets} reset, ${records.length} checked`
+            `[PhoneMonitor] PhoneNumber scan done — ${resets} reset, ${records.length} checked`
+        );
+
+        // --- Indian Numbers ---
+        const indianRecords = await IndianNumber.find({
+            is_active: "running"
+        }).select("_id updatedAt is_active");
+
+        let indianResets = 0;
+
+        for (const record of indianRecords) {
+
+            const updatedAtTime = new Date(record.updatedAt);
+            const diff = now - updatedAtTime.getTime();
+            const diffMinutes = Math.floor(diff / 60000);
+
+            if (diff > watchWindow) {
+                record.is_active = "inactive";
+                await record.save();
+                indianResets++;
+                console.log(
+                    `[IndianMonitor] ${record._id} → set to inactive (no update for ${diffMinutes} min)`
+                );
+            }
+        }
+
+        console.log(
+            `[IndianMonitor] IndianNumber scan done — ${indianResets} reset, ${indianRecords.length} checked`
         );
 
     } catch (err) {
@@ -76,4 +105,4 @@ const startPhoneNumberMonitor = (scanMinutes = 1, watchMinutes = 5) => {
     };
 };
 
-module.exports = { startPhoneNumberMonitor };
+module.exports = { startPhoneNumberMonitor };
