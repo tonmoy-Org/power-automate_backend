@@ -159,6 +159,13 @@ const getRandomInactiveIndianNumber = async (req, res) => {
                 await selected.save();
                 return res.json({ success: true, data: selected });
             }
+
+            // Fallback: assign any inactive number to this rdp_id to prevent bot from idling
+            const fallback_selected = cc_items[0];
+            fallback_selected.is_active = "running";
+            fallback_selected.rdp_id = rdp_id;
+            await fallback_selected.save();
+            return res.json({ success: true, data: fallback_selected });
         }
         return res.status(404).json({ success: false, message: "No inactive numbers available" });
     } catch (err) {

@@ -125,7 +125,7 @@ const getRandomInactivePhoneNumber = async (req, res) => {
             }
 
             const in_active_items = cc_items.filter(
-                item => item.rdp_id === null
+                item => item.rdp_id === null || item.rdp_id === undefined
             );
 
             if (in_active_items.length > 0) {
@@ -142,6 +142,17 @@ const getRandomInactivePhoneNumber = async (req, res) => {
                     data: selected
                 });
             }
+
+            // Fallback: assign any inactive number to this rdp_id to prevent bot from idling
+            const fallback_selected = cc_items[0];
+            fallback_selected.is_active = "running";
+            fallback_selected.rdp_id = rdp_id;
+            await fallback_selected.save();
+
+            return res.json({
+                success: true,
+                data: fallback_selected
+            });
         }
 
         return res.status(404).json({
