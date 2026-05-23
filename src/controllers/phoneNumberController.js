@@ -595,8 +595,8 @@ const getDashboardStats = async (req, res) => {
             phoneCredentialsCount,
             indianPhoneCredentialsCount,
             
-            genericCredentials,
-            indianCredentials
+            genericCredentialsSummary,
+            indianCredentialsSummary
         ] = await Promise.all([
             PhoneNumber.countDocuments({}),
             PhoneNumber.countDocuments({ is_active: 'inactive' }),
@@ -612,11 +612,23 @@ const getDashboardStats = async (req, res) => {
             PhoneCredential.countDocuments({}),
             IndianPhoneCredential.countDocuments({}),
             
-            PhoneCredential.find({}).select('type country_code circle operator').lean(),
-            IndianPhoneCredential.find({}).select('type country_code circle operator').lean()
+            PhoneCredential.aggregate([
+                { $match: { country_code: { $ne: '91' } } },
+                { $group: { _id: "$type", count: { $sum: 1 } } }
+            ]),
+            IndianPhoneCredential.aggregate([
+                { $match: { circle: { $exists: true, $ne: "" }, operator: { $exists: true, $ne: "" } } },
+                { $group: { _id: "$type", count: { $sum: 1 } } }
+            ])
         ]);
 
-        const allCredentials = [...genericCredentials, ...indianCredentials];
+        const globalTypeSummary = genericCredentialsSummary
+            .map(item => ({ type: item._id || 'default', count: item.count }))
+            .sort((a, b) => a.type.localeCompare(b.type));
+
+        const indianTypeSummary = indianCredentialsSummary
+            .map(item => ({ type: item._id || 'default', count: item.count }))
+            .sort((a, b) => a.type.localeCompare(b.type));
 
         res.status(200).json({
             success: true,
@@ -636,7 +648,8 @@ const getDashboardStats = async (req, res) => {
                     phoneCredentials: phoneCredentialsCount,
                     indianPhoneCredentials: indianPhoneCredentialsCount,
                 },
-                credentials: allCredentials
+                globalTypeSummary,
+                indianTypeSummary
             }
         });
     } catch (error) {
