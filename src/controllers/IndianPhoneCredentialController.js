@@ -42,15 +42,15 @@ const createCredential = async (req, res) => {
 // Get Indian credentials
 const getCredentials = async (req, res) => {
   try {
-    let filter = {
-      circle: { $exists: true, $ne: "" },
-      operator: { $exists: true, $ne: "" }
-    };
+    const { phone } = req.query;
 
+    let filter = {};
+
+    // Only filter by phone if explicitly requested
     if (phone) filter.phone = phone;
 
     const credentials = await IndianPhoneCredential.find(filter)
-      .select('phone password type operator circle createdAt')
+      .select('phone password type operator circle country_code createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -59,6 +59,7 @@ const getCredentials = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Get Indian credential by ID
 const getCredentialById = async (req, res) => {
