@@ -38,6 +38,15 @@ const getIndianNumbers = async (req, res) => {
                             country_code: '$country_code'
                         },
                         count: { $sum: 1 },
+                        inactiveCount: {
+                            $sum: { $cond: [{ $eq: ['$is_active', 'inactive'] }, 1, 0] }
+                        },
+                        runningCount: {
+                            $sum: { $cond: [{ $eq: ['$is_active', 'running'] }, 1, 0] }
+                        },
+                        completedCount: {
+                            $sum: { $cond: [{ $eq: ['$is_active', 'completed'] }, 1, 0] }
+                        },
                         ids: { $push: '$_id' }
                     }
                 },
@@ -48,6 +57,9 @@ const getIndianNumbers = async (req, res) => {
                         circle: '$_id.circle',
                         country_code: '$_id.country_code',
                         count: 1,
+                        inactiveCount: 1,
+                        runningCount: 1,
+                        completedCount: 1,
                         ids: 1
                     }
                 }
