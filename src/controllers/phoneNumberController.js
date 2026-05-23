@@ -30,58 +30,18 @@ const parseFormatterIds = (password_formatters) => {
 
 const getPhoneNumbers = async (req, res) => {
     try {
-        const { search = '', summary = '', country_code = '' } = req.query;
-
-        if (summary === 'true') {
-            const summaryData = await PhoneNumber.aggregate([
-                {
-                    $group: {
-                        _id: '$country_code',
-                        count: { $sum: 1 },
-                        inactiveCount: {
-                            $sum: { $cond: [{ $eq: ['$is_active', 'inactive'] }, 1, 0] }
-                        },
-                        runningCount: {
-                            $sum: { $cond: [{ $eq: ['$is_active', 'running'] }, 1, 0] }
-                        },
-                        completedCount: {
-                            $sum: { $cond: [{ $eq: ['$is_active', 'completed'] }, 1, 0] }
-                        },
-                        ids: { $push: '$_id' }
-                    }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        country_code: '$_id',
-                        count: 1,
-                        inactiveCount: 1,
-                        runningCount: 1,
-                        completedCount: 1,
-                        ids: 1
-                    }
-                }
-            ]);
-
-            return res.status(200).json({
-                success: true,
-                summary: true,
-                data: summaryData
-            });
-        }
+        const { search = '' } = req.query;
 
         let query = {};
 
-        if (country_code) {
-            query.country_code = country_code;
-        }
-
         if (search) {
-            query.$or = [
-                { number: { $regex: search, $options: 'i' } },
-                { country_code: { $regex: search, $options: 'i' } },
-                { rdp_id: { $regex: search, $options: 'i' } }
-            ];
+            query = {
+                $or: [
+                    { number: { $regex: search, $options: 'i' } },
+                    { country_code: { $regex: search, $options: 'i' } },
+                    { rdp_id: { $regex: search, $options: 'i' } }
+                ]
+            };
         }
 
         const phoneNumbers = await PhoneNumber.find(query)
@@ -607,8 +567,8 @@ const getDashboardStats = async (req, res) => {
             phoneCredentialsCount,
             indianPhoneCredentialsCount,
             
-            genericCredentialsSummary,
-            indianCredentialsSummary
+            genericCredentials,
+            indianCredentials
         ] = await Promise.all([
             PhoneNumber.countDocuments({}),
             PhoneNumber.countDocuments({ is_active: 'inactive' }),
@@ -624,23 +584,11 @@ const getDashboardStats = async (req, res) => {
             PhoneCredential.countDocuments({}),
             IndianPhoneCredential.countDocuments({}),
             
-            PhoneCredential.aggregate([
-                { $match: { country_code: { $ne: '91' } } },
-                { $group: { _id: "$type", count: { $sum: 1 } } }
-            ]),
-            IndianPhoneCredential.aggregate([
-                { $match: { circle: { $exists: true, $ne: "" }, operator: { $exists: true, $ne: "" } } },
-                { $group: { _id: "$type", count: { $sum: 1 } } }
-            ])
+            PhoneCredential.find({}).select('type country_code circle operator').lean(),
+            IndianPhoneCredential.find({}).select('type country_code circle operator').lean()
         ]);
 
-        const globalTypeSummary = genericCredentialsSummary
-            .map(item => ({ type: item._id || 'default', count: item.count }))
-            .sort((a, b) => a.type.localeCompare(b.type));
-
-        const indianTypeSummary = indianCredentialsSummary
-            .map(item => ({ type: item._id || 'default', count: item.count }))
-            .sort((a, b) => a.type.localeCompare(b.type));
+        const allCredentials = [...genericCredentials, ...indianCredentials];
 
         res.status(200).json({
             success: true,
@@ -660,8 +608,7 @@ const getDashboardStats = async (req, res) => {
                     phoneCredentials: phoneCredentialsCount,
                     indianPhoneCredentials: indianPhoneCredentialsCount,
                 },
-                globalTypeSummary,
-                indianTypeSummary
+                credentials: allCredentials
             }
         });
     } catch (error) {

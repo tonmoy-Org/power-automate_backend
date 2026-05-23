@@ -39,7 +39,7 @@ const createCredential = async (req, res) => {
 
 const getCredentials = async (req, res) => {
   try {
-    const { country_code, exclude_country_code, phone, summary } = req.query;
+    const { country_code, exclude_country_code, phone } = req.query;
     let filter = {};
 
     if (country_code) {
@@ -48,27 +48,6 @@ const getCredentials = async (req, res) => {
       filter.country_code = { $ne: exclude_country_code };
     }
     if (phone) filter.phone = phone;
-
-    if (summary === 'true') {
-      const summaryData = await PhoneCredential.aggregate([
-        { $match: filter },
-        {
-          $group: {
-            _id: { country_code: "$country_code", type: "$type" },
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            country_code: "$_id.country_code",
-            type: "$_id.type",
-            count: "$count"
-          }
-        }
-      ]);
-      return res.json({ summary: true, data: summaryData });
-    }
 
     const credentials = await PhoneCredential.find(filter)
       .select('country_code phone password type operator circle createdAt')

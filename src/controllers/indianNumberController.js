@@ -26,68 +26,18 @@ const parseFormatterIds = (password_formatters) => {
 
 const getIndianNumbers = async (req, res) => {
     try {
-        const { search = '', summary, operator, circle } = req.query;
-
-        if (summary === 'true') {
-            const summaryData = await IndianNumber.aggregate([
-                {
-                    $group: {
-                        _id: {
-                            operator: '$operator',
-                            circle: '$circle',
-                            country_code: '$country_code'
-                        },
-                        count: { $sum: 1 },
-                        inactiveCount: {
-                            $sum: { $cond: [{ $eq: ['$is_active', 'inactive'] }, 1, 0] }
-                        },
-                        runningCount: {
-                            $sum: { $cond: [{ $eq: ['$is_active', 'running'] }, 1, 0] }
-                        },
-                        completedCount: {
-                            $sum: { $cond: [{ $eq: ['$is_active', 'completed'] }, 1, 0] }
-                        },
-                        ids: { $push: '$_id' }
-                    }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        operator: '$_id.operator',
-                        circle: '$_id.circle',
-                        country_code: '$_id.country_code',
-                        count: 1,
-                        inactiveCount: 1,
-                        runningCount: 1,
-                        completedCount: 1,
-                        ids: 1
-                    }
-                }
-            ]);
-
-            return res.status(200).json({
-                success: true,
-                summary: true,
-                data: summaryData
-            });
-        }
+        const { search = '' } = req.query;
 
         let query = {};
 
         if (search) {
-            query.$or = [
-                { number: { $regex: search, $options: 'i' } },
-                { operator: { $regex: search, $options: 'i' } },
-                { rdp_id: { $regex: search, $options: 'i' } }
-            ];
-        }
-
-        if (operator) {
-            query.operator = operator;
-        }
-
-        if (circle !== undefined) {
-            query.circle = circle === 'null' || circle === '' ? null : circle;
+            query = {
+                $or: [
+                    { number: { $regex: search, $options: 'i' } },
+                    { operator: { $regex: search, $options: 'i' } },
+                    { rdp_id: { $regex: search, $options: 'i' } }
+                ]
+            };
         }
 
         const indianNumbers = await IndianNumber.find(query)

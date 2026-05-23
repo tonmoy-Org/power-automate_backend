@@ -42,35 +42,12 @@ const createCredential = async (req, res) => {
 // Get Indian credentials
 const getCredentials = async (req, res) => {
   try {
-    const { phone, summary } = req.query;
     let filter = {
       circle: { $exists: true, $ne: "" },
       operator: { $exists: true, $ne: "" }
     };
 
     if (phone) filter.phone = phone;
-
-    if (summary === 'true') {
-      const summaryData = await IndianPhoneCredential.aggregate([
-        { $match: filter },
-        {
-          $group: {
-            _id: { circle: "$circle", operator: "$operator", type: "$type" },
-            count: { $sum: 1 }
-          }
-        },
-        {
-          $project: {
-            _id: 0,
-            circle: "$_id.circle",
-            operator: "$_id.operator",
-            type: "$_id.type",
-            count: "$count"
-          }
-        }
-      ]);
-      return res.json({ summary: true, data: summaryData });
-    }
 
     const credentials = await IndianPhoneCredential.find(filter)
       .select('phone password type operator circle createdAt')
