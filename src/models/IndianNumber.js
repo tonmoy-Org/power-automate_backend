@@ -48,6 +48,7 @@ const indianNumberSchema = new mongoose.Schema(
 );
 
 indianNumberSchema.index({ country_code: 1, is_active: 1 });
+indianNumberSchema.index({ createdAt: 1 });
 indianNumberSchema.index({
     number: 'text',
     operator: 'text',

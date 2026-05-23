@@ -42,7 +42,8 @@ const getIndianNumbers = async (req, res) => {
 
         const indianNumbers = await IndianNumber.find(query)
             .populate('password_formatters')
-            .sort({ createdAt: 1 });
+            .sort({ createdAt: 1 })
+            .lean();
 
         res.status(200).json({
             success: true,
@@ -62,7 +63,8 @@ const getIndianNumbers = async (req, res) => {
 const getIndianNumberById = async (req, res) => {
     try {
         const indianNumber = await IndianNumber.findById(req.params.id)
-            .populate('password_formatters');
+            .populate('password_formatters')
+            .lean();
 
         if (!indianNumber) {
             return res.status(404).json({

@@ -16,9 +16,9 @@ const createCredential = async (req, res) => {
       phone,
       password,
       type: type || "default",
+      operator,
+      circle
     };
-    if (operator) updateData.operator = operator;
-    if (circle) updateData.circle = circle;
 
     const credential = await PhoneCredential.findOneAndUpdate(
       { country_code, phone },
@@ -39,15 +39,19 @@ const createCredential = async (req, res) => {
 
 const getCredentials = async (req, res) => {
   try {
-    const { country_code, phone } = req.query;
+    const { country_code, exclude_country_code, phone } = req.query;
     let filter = {};
 
-    if (country_code) filter.country_code = country_code;
+    if (country_code) {
+      filter.country_code = country_code;
+    } else if (exclude_country_code) {
+      filter.country_code = { $ne: exclude_country_code };
+    }
     if (phone) filter.phone = phone;
 
-    const credentials = await PhoneCredential.find(filter).sort({
-      createdAt: -1,
-    });
+    const credentials = await PhoneCredential.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json(credentials);
   } catch (error) {
@@ -57,7 +61,7 @@ const getCredentials = async (req, res) => {
 
 const getCredentialById = async (req, res) => {
   try {
-    const credential = await PhoneCredential.findById(req.params.id);
+    const credential = await PhoneCredential.findById(req.params.id).lean();
 
     if (!credential) {
       return res.status(404).json({ message: "Credential not found" });
@@ -71,7 +75,7 @@ const getCredentialById = async (req, res) => {
 
 const updateCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type } = req.body;
+    const { country_code, phone, password, type, operator, circle } = req.body;
 
     if (country_code || phone) {
       const newCountryCode = country_code || req.body.country_code;
@@ -102,9 +106,11 @@ const updateCredential = async (req, res) => {
       }
     }
 
+    const updateFields = { country_code, phone, password, type, operator, circle };
+
     const credential = await PhoneCredential.findByIdAndUpdate(
       req.params.id,
-      { country_code, phone, password, type },
+      updateFields,
       { new: true, runValidators: true },
     );
 

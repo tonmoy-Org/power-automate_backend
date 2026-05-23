@@ -1,4 +1,7 @@
 const PhoneNumber = require('../models/PhoneNumber');
+const IndianNumber = require('../models/IndianNumber');
+const PasswordFormatter = require('../models/PasswordFormatter');
+const PhoneCredential = require('../models/PhoneCredential');
 
 const parseFormatterIds = (password_formatters) => {
     if (!password_formatters) return [];
@@ -42,7 +45,8 @@ const getPhoneNumbers = async (req, res) => {
 
         const phoneNumbers = await PhoneNumber.find(query)
             .populate('password_formatters')
-            .sort({ createdAt: 1 });
+            .sort({ createdAt: 1 })
+            .lean();
 
         res.status(200).json({
             success: true,
@@ -62,7 +66,8 @@ const getPhoneNumbers = async (req, res) => {
 const getPhoneNumberById = async (req, res) => {
     try {
         const phoneNumber = await PhoneNumber.findById(req.params.id)
-            .populate('password_formatters');
+            .populate('password_formatters')
+            .lean();
 
         if (!phoneNumber) {
             return res.status(404).json({
@@ -544,6 +549,71 @@ const bulkUpdatePhoneNumbers = async (req, res) => {
     }
 };
 
+const getDashboardStats = async (req, res) => {
+    try {
+        const [
+            phoneNumbersTotal,
+            phoneNumbersInactive,
+            phoneNumbersRunning,
+            phoneNumbersCompleted,
+            
+            indianNumbersTotal,
+            indianNumbersInactive,
+            indianNumbersRunning,
+            indianNumbersCompleted,
+            
+            passwordFormattersCount,
+            phoneCredentialsCount,
+            indianPhoneCredentialsCount,
+            
+            allCredentials
+        ] = await Promise.all([
+            PhoneNumber.countDocuments({}),
+            PhoneNumber.countDocuments({ is_active: 'inactive' }),
+            PhoneNumber.countDocuments({ is_active: 'running' }),
+            PhoneNumber.countDocuments({ is_active: 'completed' }),
+
+            IndianNumber.countDocuments({}),
+            IndianNumber.countDocuments({ is_active: 'inactive' }),
+            IndianNumber.countDocuments({ is_active: 'running' }),
+            IndianNumber.countDocuments({ is_active: 'completed' }),
+
+            PasswordFormatter.countDocuments({}),
+            PhoneCredential.countDocuments({ country_code: { $ne: '91' } }),
+            PhoneCredential.countDocuments({ country_code: '91', circle: { $exists: true }, operator: { $exists: true } }),
+            
+            PhoneCredential.find({}).select('type country_code circle operator').lean()
+        ]);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                counts: {
+                    phoneNumbers: phoneNumbersTotal,
+                    phoneNumbersInactive,
+                    phoneNumbersRunning,
+                    phoneNumbersCompleted,
+                    
+                    indianNumbers: indianNumbersTotal,
+                    indianNumbersInactive,
+                    indianNumbersRunning,
+                    indianNumbersCompleted,
+                    
+                    passwordFormatters: passwordFormattersCount,
+                    phoneCredentials: phoneCredentialsCount,
+                    indianPhoneCredentials: indianPhoneCredentialsCount,
+                },
+                credentials: allCredentials
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
 module.exports = {
     getPhoneNumbers,
     getPhoneNumberById,
@@ -555,5 +625,6 @@ module.exports = {
     deletePhoneNumber,
     bulkDeletePhoneNumbers,
     bulkUpdatePhoneNumberStatus,
-    bulkUpdatePhoneNumbers
+    bulkUpdatePhoneNumbers,
+    getDashboardStats
 };

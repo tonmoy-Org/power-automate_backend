@@ -12,11 +12,13 @@ const {
     bulkCreatePhoneNumbers,
     bulkDeletePhoneNumbers,
     bulkUpdatePhoneNumberStatus,
-    bulkUpdatePhoneNumbers
+    bulkUpdatePhoneNumbers,
+    getDashboardStats
 } = require('../controllers/phoneNumberController');
 
 const { protect } = require('../middleware/authMiddleware');
 
+router.get('/dashboard/stats', protect, getDashboardStats);
 router.get('/inactive/random', protect, getRandomInactivePhoneNumber);
 
 router.post('/bulk', protect, bulkCreatePhoneNumbers);

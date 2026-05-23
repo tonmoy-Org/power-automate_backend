@@ -39,6 +39,7 @@ const phoneNumberSchema = new mongoose.Schema(
 );
 
 phoneNumberSchema.index({ country_code: 1, is_active: 1 });
+phoneNumberSchema.index({ createdAt: 1 });
 phoneNumberSchema.index({
     number: 'text',
     country_code: 'text'

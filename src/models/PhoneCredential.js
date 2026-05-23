@@ -40,6 +40,8 @@ phoneCredentialSchema.index(
 phoneCredentialSchema.index({ country_code: 1 });
 phoneCredentialSchema.index({ type: 1 });
 phoneCredentialSchema.index({ country_code: 1, type: 1 });
+phoneCredentialSchema.index({ createdAt: -1 });
+phoneCredentialSchema.index({ country_code: 1, createdAt: -1 });
 
 
 module.exports = mongoose.model(
