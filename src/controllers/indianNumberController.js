@@ -123,24 +123,23 @@ const getRandomInactiveIndianNumber = async (req, res) => {
             });
         }
         // Build query allowing optional operators, circles and country_code
-        const query = {
-            is_active: "inactive"
-        };
+        const baseFilter = {};
         if (country_code) {
-            query.country_code = country_code;
+            baseFilter.country_code = country_code;
         }
-        
+
         const operatorList = parseQueryList(operator);
         if (operatorList.length > 0) {
-            query.operator = { $in: operatorList };
+            baseFilter.operator = { $in: operatorList };
         }
-        
+
         const circleList = parseQueryList(circle);
         if (circleList.length > 0) {
-            query.circle = { $in: circleList };
+            baseFilter.circle = { $in: circleList };
         }
-        
-        const cc_items = await IndianNumber.find(query).populate("password_formatters");
+
+        // 1. Search inactive numbers first
+        const cc_items = await IndianNumber.find({ ...baseFilter, is_active: "inactive" }).populate("password_formatters");
         if (cc_items.length > 0) {
             // Prefer numbers that already have this rdp_id assigned
             const rdp_items = cc_items.filter(item => item.rdp_id === rdp_id);
@@ -167,11 +166,26 @@ const getRandomInactiveIndianNumber = async (req, res) => {
             await fallback_selected.save();
             return res.json({ success: true, data: fallback_selected });
         }
+
+        // 2. No inactive numbers — check if this rdp_id already has a "running" number
+        //    (bot was restarted and needs to resume its previous work)
+        const resumable = await IndianNumber.findOne({
+            ...baseFilter,
+            is_active: "running",
+            rdp_id: rdp_id
+        }).populate("password_formatters");
+
+        if (resumable) {
+            console.log(`[IndianNumbers] Resuming running number ${resumable.number} for rdp_id=${rdp_id}`);
+            return res.json({ success: true, data: resumable });
+        }
+
         return res.status(404).json({ success: false, message: "No inactive numbers available" });
     } catch (err) {
         return res.status(500).json({ success: false, message: err.message });
     }
 };
+
 
 
 const createIndianNumber = async (req, res) => {
