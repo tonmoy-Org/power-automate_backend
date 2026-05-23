@@ -26,18 +26,56 @@ const parseFormatterIds = (password_formatters) => {
 
 const getIndianNumbers = async (req, res) => {
     try {
-        const { search = '' } = req.query;
+        const { search = '', summary, operator, circle } = req.query;
+
+        if (summary === 'true') {
+            const summaryData = await IndianNumber.aggregate([
+                {
+                    $group: {
+                        _id: {
+                            operator: '$operator',
+                            circle: '$circle',
+                            country_code: '$country_code'
+                        },
+                        count: { $sum: 1 },
+                        ids: { $push: '$_id' }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        operator: '$_id.operator',
+                        circle: '$_id.circle',
+                        country_code: '$_id.country_code',
+                        count: 1,
+                        ids: 1
+                    }
+                }
+            ]);
+
+            return res.status(200).json({
+                success: true,
+                summary: true,
+                data: summaryData
+            });
+        }
 
         let query = {};
 
         if (search) {
-            query = {
-                $or: [
-                    { number: { $regex: search, $options: 'i' } },
-                    { operator: { $regex: search, $options: 'i' } },
-                    { rdp_id: { $regex: search, $options: 'i' } }
-                ]
-            };
+            query.$or = [
+                { number: { $regex: search, $options: 'i' } },
+                { operator: { $regex: search, $options: 'i' } },
+                { rdp_id: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        if (operator) {
+            query.operator = operator;
+        }
+
+        if (circle !== undefined) {
+            query.circle = circle === 'null' || circle === '' ? null : circle;
         }
 
         const indianNumbers = await IndianNumber.find(query)
@@ -102,11 +140,11 @@ const getRandomInactiveIndianNumber = async (req, res) => {
         if (country_code) {
             query.country_code = country_code;
         }
-        if (operator) {
+        if (operator && operator !== 'None' && operator !== 'undefined' && operator !== '') {
             const operatorList = Array.isArray(operator) ? operator : [operator];
             query.operator = { $in: operatorList };
         }
-        if (circle) {
+        if (circle && circle !== 'None' && circle !== 'undefined' && circle !== '') {
             const circleList = Array.isArray(circle) ? circle : [circle];
             query.circle = { $in: circleList };
         }

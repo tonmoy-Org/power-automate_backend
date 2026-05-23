@@ -1,13 +1,15 @@
-const PhoneNumber = require("../models/PhoneNumber");
-const PhoneCredential = require("../models/PhoneCredential");
+const IndianNumber = require("../models/IndianNumber");
+const IndianPhoneCredential = require("../models/IndianPhoneCredential");
 
+// Create or update Indian credential
 const createCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type, operator, circle } = req.body;
+    const { phone, password, type, operator, circle } = req.body;
+    const country_code = "91"; // Forced to Indian country code
 
-    if (!country_code || !phone) {
+    if (!phone) {
       return res.status(400).json({
-        message: "Country code and phone are required",
+        message: "Phone number is required",
       });
     }
 
@@ -20,14 +22,14 @@ const createCredential = async (req, res) => {
       circle
     };
 
-    const credential = await PhoneCredential.findOneAndUpdate(
-      { country_code, phone },
+    const credential = await IndianPhoneCredential.findOneAndUpdate(
+      { phone },
       { $set: updateData },
       { new: true, upsert: true }
     );
 
     res.status(201).json({
-      message: "Credential saved successfully",
+      message: "Indian credential saved successfully",
       data: credential,
     });
   } catch (error) {
@@ -37,31 +39,31 @@ const createCredential = async (req, res) => {
   }
 };
 
+// Get Indian credentials
 const getCredentials = async (req, res) => {
   try {
-    const { country_code, exclude_country_code, phone, summary } = req.query;
-    let filter = {};
+    const { phone, summary } = req.query;
+    let filter = {
+      circle: { $exists: true, $ne: "" },
+      operator: { $exists: true, $ne: "" }
+    };
 
-    if (country_code) {
-      filter.country_code = country_code;
-    } else if (exclude_country_code) {
-      filter.country_code = { $ne: exclude_country_code };
-    }
     if (phone) filter.phone = phone;
 
     if (summary === 'true') {
-      const summaryData = await PhoneCredential.aggregate([
+      const summaryData = await IndianPhoneCredential.aggregate([
         { $match: filter },
         {
           $group: {
-            _id: { country_code: "$country_code", type: "$type" },
+            _id: { circle: "$circle", operator: "$operator", type: "$type" },
             count: { $sum: 1 }
           }
         },
         {
           $project: {
             _id: 0,
-            country_code: "$_id.country_code",
+            circle: "$_id.circle",
+            operator: "$_id.operator",
             type: "$_id.type",
             count: "$count"
           }
@@ -70,8 +72,8 @@ const getCredentials = async (req, res) => {
       return res.json({ summary: true, data: summaryData });
     }
 
-    const credentials = await PhoneCredential.find(filter)
-      .select('country_code phone password type operator circle createdAt')
+    const credentials = await IndianPhoneCredential.find(filter)
+      .select('phone password type operator circle createdAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -81,9 +83,10 @@ const getCredentials = async (req, res) => {
   }
 };
 
+// Get Indian credential by ID
 const getCredentialById = async (req, res) => {
   try {
-    const credential = await PhoneCredential.findById(req.params.id).lean();
+    const credential = await IndianPhoneCredential.findById(req.params.id).lean();
 
     if (!credential) {
       return res.status(404).json({ message: "Credential not found" });
@@ -95,45 +98,48 @@ const getCredentialById = async (req, res) => {
   }
 };
 
+// Update Indian credential
 const updateCredential = async (req, res) => {
   try {
-    const { country_code, phone, password, type, operator, circle } = req.body;
+    const { phone, password, type, operator, circle } = req.body;
+    const country_code = "91";
 
-    if (country_code || phone) {
-      const newCountryCode = country_code || req.body.country_code;
-      const newPhone = phone || req.body.phone;
-
-      const phoneExists = await PhoneNumber.findOne({
-        country_code: newCountryCode,
-        phone: newPhone,
+    if (phone) {
+      // Check if Indian number exists in system
+      const phoneExists = await IndianNumber.findOne({
+        number: phone,
       });
 
       if (!phoneExists) {
         return res.status(404).json({
-          message: "The specified phone number does not exist in the system",
+          message: "The specified Indian phone number does not exist in the system",
         });
       }
 
-      const existingCredential = await PhoneCredential.findOne({
-        country_code: newCountryCode,
-        phone: newPhone,
+      const existingCredential = await IndianPhoneCredential.findOne({
+        phone,
         _id: { $ne: req.params.id },
       });
 
       if (existingCredential) {
         return res.status(400).json({
           message:
-            "Duplicate credential: This country code and phone combination already exists",
+            "Duplicate credential: This phone number already exists",
         });
       }
     }
 
     const updateFields = { country_code, phone, password, type, operator, circle };
 
-    const credential = await PhoneCredential.findByIdAndUpdate(
+    // Clean undefined fields so they aren't overwritten as undefined if not passed
+    Object.keys(updateFields).forEach(
+      (key) => updateFields[key] === undefined && delete updateFields[key]
+    );
+
+    const credential = await IndianPhoneCredential.findByIdAndUpdate(
       req.params.id,
       updateFields,
-      { new: true, runValidators: true },
+      { new: true, runValidators: true }
     );
 
     if (!credential) {
@@ -148,16 +154,17 @@ const updateCredential = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({
         message:
-          "Duplicate credential: This country code and phone combination already exists",
+          "Duplicate credential: This phone number already exists",
       });
     }
     res.status(500).json({ message: error.message });
   }
 };
 
+// Delete single Indian credential
 const deleteCredential = async (req, res) => {
   try {
-    const credential = await PhoneCredential.findByIdAndDelete(req.params.id);
+    const credential = await IndianPhoneCredential.findByIdAndDelete(req.params.id);
 
     if (!credential) {
       return res.status(404).json({ message: "Credential not found" });
@@ -169,6 +176,7 @@ const deleteCredential = async (req, res) => {
   }
 };
 
+// Bulk delete Indian credentials
 const bulkDeleteCredentials = async (req, res) => {
   try {
     const { ids } = req.body;
@@ -179,18 +187,18 @@ const bulkDeleteCredentials = async (req, res) => {
       });
     }
 
-    const result = await PhoneCredential.deleteMany({
-      _id: { $in: ids },
+    const result = await IndianPhoneCredential.deleteMany({
+      _id: { $in: ids }
     });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({
-        message: "No credentials found with the provided IDs",
+        message: "No Indian credentials found with the provided IDs",
       });
     }
 
     res.json({
-      message: `Successfully deleted ${result.deletedCount} credential(s)`,
+      message: `Successfully deleted ${result.deletedCount} Indian credential(s)`,
       deletedCount: result.deletedCount,
     });
   } catch (error) {
@@ -198,29 +206,29 @@ const bulkDeleteCredentials = async (req, res) => {
   }
 };
 
-const deleteCredentialsByTypeAndCountry = async (req, res) => {
+// Delete credentials by type
+const deleteCredentialsByType = async (req, res) => {
   try {
-    const { type, countryCode } = req.body;
+    const { type } = req.body;
 
-    if (!type || !countryCode) {
+    if (!type) {
       return res.status(400).json({
-        message: "Type and countryCode are required",
+        message: "Type is required",
       });
     }
 
-    const result = await PhoneCredential.deleteMany({
-      type: type,
-      country_code: countryCode,
+    const result = await IndianPhoneCredential.deleteMany({
+      type: type
     });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({
-        message: `No Type ${type} credentials found for Country Code ${countryCode}`,
+        message: `No Type ${type} Indian credentials found`,
       });
     }
 
     res.json({
-      message: `Successfully deleted ${result.deletedCount} Type ${type} credential(s) for Country Code ${countryCode}`,
+      message: `Successfully deleted ${result.deletedCount} Type ${type} Indian credential(s)`,
       deletedCount: result.deletedCount,
     });
   } catch (error) {
@@ -235,5 +243,5 @@ module.exports = {
   updateCredential,
   deleteCredential,
   bulkDeleteCredentials,
-  deleteCredentialsByTypeAndCountry,
+  deleteCredentialsByType,
 };

@@ -2,6 +2,7 @@ const PhoneNumber = require('../models/PhoneNumber');
 const IndianNumber = require('../models/IndianNumber');
 const PasswordFormatter = require('../models/PasswordFormatter');
 const PhoneCredential = require('../models/PhoneCredential');
+const IndianPhoneCredential = require('../models/IndianPhoneCredential');
 
 const parseFormatterIds = (password_formatters) => {
     if (!password_formatters) return [];
@@ -29,18 +30,46 @@ const parseFormatterIds = (password_formatters) => {
 
 const getPhoneNumbers = async (req, res) => {
     try {
-        const { search = '' } = req.query;
+        const { search = '', summary = '', country_code = '' } = req.query;
+
+        if (summary === 'true') {
+            const summaryData = await PhoneNumber.aggregate([
+                {
+                    $group: {
+                        _id: '$country_code',
+                        count: { $sum: 1 },
+                        ids: { $push: '$_id' }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        country_code: '$_id',
+                        count: 1,
+                        ids: 1
+                    }
+                }
+            ]);
+
+            return res.status(200).json({
+                success: true,
+                summary: true,
+                data: summaryData
+            });
+        }
 
         let query = {};
 
+        if (country_code) {
+            query.country_code = country_code;
+        }
+
         if (search) {
-            query = {
-                $or: [
-                    { number: { $regex: search, $options: 'i' } },
-                    { country_code: { $regex: search, $options: 'i' } },
-                    { rdp_id: { $regex: search, $options: 'i' } }
-                ]
-            };
+            query.$or = [
+                { number: { $regex: search, $options: 'i' } },
+                { country_code: { $regex: search, $options: 'i' } },
+                { rdp_id: { $regex: search, $options: 'i' } }
+            ];
         }
 
         const phoneNumbers = await PhoneNumber.find(query)
@@ -566,7 +595,8 @@ const getDashboardStats = async (req, res) => {
             phoneCredentialsCount,
             indianPhoneCredentialsCount,
             
-            allCredentials
+            genericCredentials,
+            indianCredentials
         ] = await Promise.all([
             PhoneNumber.countDocuments({}),
             PhoneNumber.countDocuments({ is_active: 'inactive' }),
@@ -579,11 +609,14 @@ const getDashboardStats = async (req, res) => {
             IndianNumber.countDocuments({ is_active: 'completed' }),
 
             PasswordFormatter.countDocuments({}),
-            PhoneCredential.countDocuments({ country_code: { $ne: '91' } }),
-            PhoneCredential.countDocuments({ country_code: '91', circle: { $exists: true }, operator: { $exists: true } }),
+            PhoneCredential.countDocuments({}),
+            IndianPhoneCredential.countDocuments({}),
             
-            PhoneCredential.find({}).select('type country_code circle operator').lean()
+            PhoneCredential.find({}).select('type country_code circle operator').lean(),
+            IndianPhoneCredential.find({}).select('type country_code circle operator').lean()
         ]);
+
+        const allCredentials = [...genericCredentials, ...indianCredentials];
 
         res.status(200).json({
             success: true,

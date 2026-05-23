@@ -3,10 +3,39 @@ const mongoose = require('mongoose');
 
 const getPasswordFormatters = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '' } = req.query;
-        const skip = (page - 1) * limit;
+        const { search = '', summary = '', country_code = '' } = req.query;
+
+        if (summary === 'true') {
+            const summaryData = await PasswordFormatter.aggregate([
+                {
+                    $group: {
+                        _id: '$country_code',
+                        count: { $sum: 1 },
+                        ids: { $push: '$_id' }
+                    }
+                },
+                {
+                    $project: {
+                        _id: 0,
+                        country_code: '$_id',
+                        count: 1,
+                        ids: 1
+                    }
+                }
+            ]);
+
+            return res.status(200).json({
+                success: true,
+                summary: true,
+                data: summaryData
+            });
+        }
 
         let query = {};
+
+        if (country_code) {
+            query.country_code = country_code;
+        }
 
         if (search) {
             query.$or = [
@@ -16,17 +45,8 @@ const getPasswordFormatters = async (req, res) => {
             ];
         }
 
-        const { country_code } = req.query;
-        if (country_code) {
-            query.country_code = country_code;
-        }
-
-        const total = await PasswordFormatter.countDocuments(query);
-
         const formatters = await PasswordFormatter.find(query)
-            .sort({ country_code: 1, createdAt: 1 })
-            .skip(skip)
-            .limit(parseInt(limit));
+            .sort({ country_code: 1, createdAt: 1 });
 
         const formattersWithUsage = await Promise.all(
             formatters.map(async (formatter) => {
@@ -41,12 +61,7 @@ const getPasswordFormatters = async (req, res) => {
         res.status(200).json({
             success: true,
             data: formattersWithUsage,
-            pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total,
-                pages: Math.ceil(total / limit)
-            }
+            total: formattersWithUsage.length
         });
     } catch (error) {
         res.status(500).json({
