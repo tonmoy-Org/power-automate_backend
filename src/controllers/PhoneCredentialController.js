@@ -142,6 +142,12 @@ const deleteCredential = async (req, res) => {
       return res.status(404).json({ message: "Credential not found" });
     }
 
+    // Reset the corresponding Phone Number status to 'inactive'
+    await PhoneNumber.findOneAndUpdate(
+      { country_code: credential.country_code, number: credential.phone },
+      { $set: { is_active: "inactive" } }
+    );
+
     res.json({ message: "Credential deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -150,23 +156,39 @@ const deleteCredential = async (req, res) => {
 
 const bulkDeleteCredentials = async (req, res) => {
   try {
-    const { ids } = req.body;
+    const { ids, all, countryCode, type, operator, circle } = req.body;
 
-    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    let filter = {};
+    if (all) {
+      // Empty filter to delete all records
+    } else if (ids && Array.isArray(ids) && ids.length > 0) {
+      filter._id = { $in: ids };
+    } else {
+      if (countryCode) filter.country_code = countryCode;
+      if (type) filter.type = type;
+      if (operator) filter.operator = operator;
+      if (circle) filter.circle = circle;
+    }
+
+    if (Object.keys(filter).length === 0 && !all) {
       return res.status(400).json({
-        message: "Please provide an array of credential IDs to delete",
+        message: "Please provide a valid filter or array of credential IDs to delete",
       });
     }
 
-    const result = await PhoneCredential.deleteMany({
-      _id: { $in: ids },
-    });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({
-        message: "No credentials found with the provided IDs",
-      });
+    // Find all matching credentials to reset their Phone Number statuses
+    const credentials = await PhoneCredential.find(filter);
+    if (credentials.length > 0) {
+      const bulkOps = credentials.map((cred) => ({
+        updateOne: {
+          filter: { country_code: cred.country_code, number: cred.phone },
+          update: { $set: { is_active: "inactive" } },
+        },
+      }));
+      await PhoneNumber.bulkWrite(bulkOps);
     }
+
+    const result = await PhoneCredential.deleteMany(filter);
 
     res.json({
       message: `Successfully deleted ${result.deletedCount} credential(s)`,
@@ -185,6 +207,18 @@ const deleteCredentialsByTypeAndCountry = async (req, res) => {
       return res.status(400).json({
         message: "Type and countryCode are required",
       });
+    }
+
+    // Reset matching Phone Number statuses
+    const credentials = await PhoneCredential.find({ type, country_code: countryCode });
+    if (credentials.length > 0) {
+      const bulkOps = credentials.map((cred) => ({
+        updateOne: {
+          filter: { country_code: cred.country_code, number: cred.phone },
+          update: { $set: { is_active: "inactive" } },
+        },
+      }));
+      await PhoneNumber.bulkWrite(bulkOps);
     }
 
     const result = await PhoneCredential.deleteMany({
