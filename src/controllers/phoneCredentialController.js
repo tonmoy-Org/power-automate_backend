@@ -44,9 +44,9 @@ const createCredential = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    // Always push to Google Sheets after DB upsert unless user is a client or already pushed with same pass/type.
+    // Always push to Google Sheets after DB upsert unless already pushed with same pass/type.
     // Dedup guard inside googleSheets.pushCredential() prevents duplicate sheet rows.
-    if (req.user.role !== 'client' && isNewOrUpdated) {
+    if (isNewOrUpdated) {
       googleSheets.pushCredential({
         country_code: credential.country_code,
         phone: credential.phone,

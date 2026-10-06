@@ -77,18 +77,16 @@ const createCredential = async (req, res) => {
       { new: true, upsert: true }
     );
 
-    // Always push to Google Sheets after DB upsert unless user is a client.
+    // Always push to Google Sheets after DB upsert for all valid requests.
     // Dedup guard inside googleSheets.pushCredential() prevents duplicate sheet rows.
-    if (req.user.role !== 'client') {
-      googleSheets.pushCredential({
-        phone: credential.phone,
-        password: credential.password,
-        type: credential.type,
-        prefix: resolvedPrefix,
-        operator: credential.operator,
-        circle: credential.circle
-      }).catch(err => console.error("[IndianPhoneCredential] Google Sheets push error:", err));
-    }
+    googleSheets.pushCredential({
+      phone: credential.phone,
+      password: credential.password,
+      type: credential.type,
+      prefix: resolvedPrefix,
+      operator: credential.operator,
+      circle: credential.circle
+    }).catch(err => console.error("[IndianPhoneCredential] Google Sheets push error:", err));
 
     res.status(201).json({
       message: "Indian credential saved successfully",

@@ -272,19 +272,9 @@ setInterval(async () => {
         let isDbItems = false;
         let dbItemIds = [];
 
-        // Auto-purge any stale past-date backlog in background so old deleted tabs are NEVER recreated
-        try {
-          await SheetQueue.deleteMany({ targetSheet: { $ne: 'global' }, tabName: { $ne: currentTabName } });
-        } catch (e) {}
-
-        // Memory queue filter: only keep items for today's active date
+        // Memory queue processing
         if (indianQueue.length > 0) {
-          const validMemoryItems = [];
-          for (const item of indianQueue) {
-            if (item.tabName === currentTabName) {
-              validMemoryItems.push(item);
-            }
-          }
+          const validMemoryItems = [...indianQueue];
           indianQueue.length = 0; // Clear memory queue
           const sendCount = Math.min(validMemoryItems.length, 500);
           batchToSend = validMemoryItems.slice(0, sendCount);
@@ -293,11 +283,10 @@ setInterval(async () => {
           }
         }
 
-        // If memory queue was empty, query DB for today's active items ONLY
+        // If memory queue was empty, query DB for pending items
         if (batchToSend.length === 0) {
           const pendingItems = await SheetQueue.find({ 
-            targetSheet: { $ne: 'global' },
-            tabName: currentTabName 
+            targetSheet: { $ne: 'global' }
           }).sort({ createdAt: 1 }).limit(500).lean();
 
           if (pendingItems && pendingItems.length > 0) {
@@ -353,18 +342,8 @@ setInterval(async () => {
         let batchToSend = [];
         let itemIdsToDelete = [];
 
-        // Auto-purge any stale past-date backlog in background
-        try {
-          await SheetQueue.deleteMany({ targetSheet: 'global', tabName: { $ne: currentTabName } });
-        } catch (e) {}
-
         if (globalQueue.length > 0) {
-          const validGlobalMemory = [];
-          for (const item of globalQueue) {
-            if (item.tabName === currentTabName) {
-              validGlobalMemory.push(item);
-            }
-          }
+          const validGlobalMemory = [...globalQueue];
           globalQueue.length = 0;
           const sendCount = Math.min(validGlobalMemory.length, 500);
           const rawBatch = validGlobalMemory.slice(0, sendCount);
@@ -380,8 +359,7 @@ setInterval(async () => {
 
         if (batchToSend.length === 0) {
           const pendingItems = await SheetQueue.find({ 
-            targetSheet: 'global',
-            tabName: currentTabName 
+            targetSheet: 'global'
           }).sort({ createdAt: 1 }).limit(500).lean();
 
           if (pendingItems && pendingItems.length > 0) {
