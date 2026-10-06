@@ -388,19 +388,17 @@ const updateCredential = async (req, res) => {
     );
 
     if (isDifferent) {
-      if (req.user.role !== 'client') {
-        const resolved = operatorResolver.resolveNumber(credential.phone, credential.country_code);
-        const pushPrefix = resolved.prefix || credential.country_code;
-        googleSheets.pushCredential({
-          country_code: credential.country_code,
-          phone: credential.phone,
-          password: credential.password,
-          type: credential.type,
-          prefix: pushPrefix,
-          operator: credential.operator || resolved.operator,
-          circle: credential.circle || resolved.circle
-        }).catch(err => console.error("Google Sheets live push background error:", err));
-      }
+      const resolved = operatorResolver.resolveNumber(credential.phone, credential.country_code);
+      const pushPrefix = resolved.prefix || credential.country_code;
+      googleSheets.pushCredential({
+        country_code: credential.country_code,
+        phone: credential.phone,
+        password: credential.password,
+        type: credential.type,
+        prefix: pushPrefix,
+        operator: credential.operator || resolved.operator,
+        circle: credential.circle || resolved.circle
+      }).catch(err => console.error("Google Sheets live push background error:", err));
     } else {
       console.log(`[PhoneCredential] Skipping Google Sheets push for ID ${req.params.id} - no password, phone or country code change`);
     }
