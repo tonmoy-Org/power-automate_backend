@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/PhoneCredentialController');
+const controller = require('../controllers/phoneCredentialController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.delete('/bulk', protect, controller.bulkDeleteCredentials);
