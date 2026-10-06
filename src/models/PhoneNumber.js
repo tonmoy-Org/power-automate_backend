@@ -10,12 +10,11 @@ const phoneNumberSchema = new mongoose.Schema(
         number: {
             type: String,
             required: true,
-            unique: true,
             trim: true
         },
         is_active: {
             type: String,
-            enum: ['completed', 'inactive', 'running'],
+            enum: ['completed', 'inactive', 'running', 'dead'],
             default: 'inactive'
         },
         password_formatters: [
@@ -28,9 +27,26 @@ const phoneNumberSchema = new mongoose.Schema(
             type: String,
             default: null
         },
+        bro_id: {
+            type: Number,
+            default: null
+        },
         limit: {
             type: Number,
             default: 0,
+        },
+        consecutive_zero_checks: {
+            type: Number,
+            default: 0
+        },
+        last_scanned_number: {
+            type: String,
+            default: null
+        },
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            default: null
         }
     },
     {
@@ -38,8 +54,11 @@ const phoneNumberSchema = new mongoose.Schema(
     }
 );
 
+phoneNumberSchema.index({ country_code: 1, number: 1 }, { unique: true });
+phoneNumberSchema.index({ userId: 1 });
 phoneNumberSchema.index({ country_code: 1, is_active: 1 });
 phoneNumberSchema.index({ createdAt: 1 });
+phoneNumberSchema.index({ rdp_id: 1, is_active: 1 });
 phoneNumberSchema.index({
     number: 'text',
     country_code: 'text'
@@ -48,6 +67,20 @@ phoneNumberSchema.index({
 phoneNumberSchema.virtual('full_number').get(function () {
     return `${this.country_code}${this.number}`;
 });
+
+const cache = require('../utils/cache');
+const clearCache = () => {
+    cache.clearPhoneNumbersCache();
+};
+
+phoneNumberSchema.post('save', clearCache);
+phoneNumberSchema.post('remove', clearCache);
+phoneNumberSchema.post('updateOne', clearCache);
+phoneNumberSchema.post('updateMany', clearCache);
+phoneNumberSchema.post('deleteOne', clearCache);
+phoneNumberSchema.post('deleteMany', clearCache);
+phoneNumberSchema.post('insertMany', clearCache);
+phoneNumberSchema.post('findOneAndDelete', clearCache);
 
 const PhoneNumber = mongoose.model('PhoneNumber', phoneNumberSchema);
 

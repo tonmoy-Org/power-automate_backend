@@ -30,10 +30,45 @@ const machineSchema = new mongoose.Schema({
   autoAdd: {
     type: Boolean,
     default: false,
+  },
+  rdpIp: {
+    type: String,
+    default: '',
+  },
+  rdpUsername: {
+    type: String,
+    default: '',
+  },
+  rdpPassword: {
+    type: String,
+    default: '',
+  },
+  rdpConfig: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {},
+  },
+  pendingCommand: {
+    type: String,
+    default: '',
+  },
+  agentToken: {
+    type: String,
+    default: '',
+  },
+  rdpNumbers: {
+    type: [String],
+    default: [],
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
   }
 }, {
   timestamps: true,
 });
+
+machineSchema.index({ userId: 1 });
 
 // Middleware to automatically mark as offline if not seen for 2 minutes
 // Note: This logic is usually better handled in the query or a cron job, 

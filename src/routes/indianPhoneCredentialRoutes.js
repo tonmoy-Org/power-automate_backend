@@ -5,9 +5,13 @@ const { protect } = require('../middleware/authMiddleware');
 
 router.delete('/bulk', protect, controller.bulkDeleteCredentials);
 router.delete('/by-type', protect, controller.deleteCredentialsByType);
+router.get('/download', protect, controller.downloadCredentials);
+router.get('/history-3days', protect, controller.getHistory3Days);
+router.get('/export-csv', protect, controller.exportCsvByDate);
+router.get('/export-all', protect, controller.exportAllCredentialsCsv);
 
 router.route('/')
-    .get(controller.getCredentials)
+    .get(protect, controller.getCredentials)
     .post(protect, controller.createCredential);
 
 router.route('/:id')

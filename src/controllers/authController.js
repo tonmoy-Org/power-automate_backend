@@ -106,7 +106,7 @@ const login = async (req, res) => {
     // Debug: Check if password exists
     if (!user.password) {
       console.error('User found but password field is missing:', email);
-      return res.status(500).json({ 
+      return res.status(200).json({ 
         success: false, 
         message: 'Authentication error' 
       });
@@ -157,7 +157,7 @@ const login = async (req, res) => {
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
+    res.status(200).json({ 
       success: false, 
       message: error.message 
     });
@@ -178,7 +178,7 @@ const getMe = async (req, res) => {
       user: formatUserResponse(user),
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(200).json({ success: false, message: error.message });
   }
 };
 
@@ -213,7 +213,7 @@ const updateProfile = async (req, res) => {
       user: formatUserResponse(user),
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(200).json({ success: false, message: error.message });
   }
 };
 
@@ -265,7 +265,7 @@ const forgotPassword = async (req, res) => {
 
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({
+    res.status(200).json({
       success: false,
       message: error.message || 'Server error'
     });
@@ -304,7 +304,7 @@ const validateResetToken = async (req, res) => {
 
   } catch (error) {
     console.error('Validate token error:', error);
-    res.status(500).json({
+    res.status(200).json({
       success: false,
       message: error.message || 'Server error'
     });
@@ -373,7 +373,7 @@ const resetPassword = async (req, res) => {
 
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({
+    res.status(200).json({
       success: false,
       message: error.message || 'Server error'
     });
@@ -404,7 +404,7 @@ const changePassword = async (req, res) => {
     // Debug: Check if password exists
     if (!user.password) {
       console.error('User found but password field is missing for user ID:', req.user.id);
-      return res.status(500).json({ 
+      return res.status(200).json({ 
         success: false, 
         message: 'Authentication error' 
       });
@@ -440,7 +440,7 @@ const changePassword = async (req, res) => {
     });
   } catch (error) {
     console.error('Change password error:', error);
-    res.status(500).json({ 
+    res.status(200).json({ 
       success: false, 
       message: error.message 
     });

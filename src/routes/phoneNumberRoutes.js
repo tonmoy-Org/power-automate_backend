@@ -13,13 +13,27 @@ const {
     bulkDeletePhoneNumbers,
     bulkUpdatePhoneNumberStatus,
     bulkUpdatePhoneNumbers,
-    getDashboardStats
+    getDashboardStats,
+    getRunningRdpsList,
+    getInactiveRdpsList,
+    clearInactiveRdps,
+    deleteInactiveRdpById,
+    resetRdpNumbers,
+    getPhoneNumberGroups,
+    syncCountryFormatters
 } = require('../controllers/phoneNumberController');
 
 const { protect } = require('../middleware/authMiddleware');
 
 router.get('/dashboard/stats', protect, getDashboardStats);
+router.get('/dashboard/running-rdps', protect, getRunningRdpsList);
+router.get('/dashboard/inactive-rdps', protect, getInactiveRdpsList);
+router.delete('/dashboard/inactive-rdps', protect, clearInactiveRdps);
+router.delete('/dashboard/inactive-rdps/:rdp_id', protect, deleteInactiveRdpById);
+router.get('/groups', protect, getPhoneNumberGroups);
 router.get('/inactive/random', protect, getRandomInactivePhoneNumber);
+router.post('/reset-rdp', protect, resetRdpNumbers);
+router.post('/sync-formatters', protect, syncCountryFormatters);
 
 router.post('/bulk', protect, bulkCreatePhoneNumbers);
 router.delete('/bulk', protect, bulkDeletePhoneNumbers);

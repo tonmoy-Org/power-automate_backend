@@ -3,6 +3,7 @@ const router = express.Router();
 
 const {
     getIndianNumbers,
+    getIndianNumberGroups,
     getIndianNumberById,
     createIndianNumber,
     updateIndianNumber,
@@ -12,12 +13,18 @@ const {
     bulkCreateIndianNumbers,
     bulkDeleteIndianNumbers,
     bulkUpdateIndianNumberStatus,
-    bulkUpdateIndianNumbers
+    bulkUpdateIndianNumbers,
+    resetRdpIndianNumbers,
+    markIndianNumberDead
 } = require('../controllers/indianNumberController');
 
 const { protect } = require('../middleware/authMiddleware');
 
+router.get('/groups', protect, getIndianNumberGroups);
 router.get('/inactive/random', protect, getRandomInactiveIndianNumber);
+router.post('/reset-rdp', protect, resetRdpIndianNumbers);
+router.post('/mark-dead', protect, markIndianNumberDead);
+router.post('/:id/dead', protect, markIndianNumberDead);
 
 router.post('/bulk', protect, bulkCreateIndianNumbers);
 router.delete('/bulk', protect, bulkDeleteIndianNumbers);

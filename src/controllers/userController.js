@@ -21,10 +21,11 @@ const getAllUsers = async (req, res) => {
         }
 
         if (search) {
+            const escapedSearch = search.trim().toLowerCase().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
             filter.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { email: { $regex: search, $options: 'i' } },
-                { role: { $regex: search, $options: 'i' } }
+                { name: { $regex: escapedSearch, $options: 'i' } },
+                { email: { $regex: escapedSearch, $options: 'i' } },
+                { role: { $regex: escapedSearch, $options: 'i' } }
             ];
         }
 
@@ -52,7 +53,7 @@ const getAllUsers = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        res.status(200).json({
             success: false,
             message: 'Server error while fetching users',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -73,7 +74,7 @@ const getUserById = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        res.status(200).json({
             success: false,
             message: 'Server error while fetching user',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -124,7 +125,7 @@ const createUser = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        res.status(200).json({
             success: false,
             message: 'Server error while creating user',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -164,7 +165,7 @@ const updateUser = async (req, res) => {
             return res.status(400).json({ success: false, message: messages.join(', ') });
         }
 
-        res.status(500).json({
+        res.status(200).json({
             success: false,
             message: 'Server error while updating user',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -188,7 +189,7 @@ const deleteUser = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        res.status(200).json({
             success: false,
             message: 'Server error while deleting user',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
@@ -219,7 +220,7 @@ const toggleUserStatus = async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(500).json({
+        res.status(200).json({
             success: false,
             message: 'Server error while toggling user status',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,

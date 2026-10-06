@@ -5,6 +5,7 @@ const { protect } = require('../middleware/authMiddleware');
 
 router.delete('/bulk', protect, controller.bulkDeleteCredentials);
 router.delete('/by-type', protect, controller.deleteCredentialsByTypeAndCountry);
+router.get('/download', protect, controller.downloadCredentials);
 
 router.route('/')
     .get(protect, controller.getCredentials)

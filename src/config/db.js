@@ -2,7 +2,13 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 200,           // Up from default 100 for 10K RDP scale
+      minPoolSize: 20,            // Keep 20 warm connections ready
+      socketTimeoutMS: 30000,     // 30s socket timeout (prevent hung connections)
+      serverSelectionTimeoutMS: 10000, // 10s server selection timeout
+      maxIdleTimeMS: 60000,       // Close idle connections after 60s
+    });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     return conn;
